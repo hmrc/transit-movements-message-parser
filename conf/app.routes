@@ -1,3 +1,5 @@
 # microservice specific routes
-
-GET        /hello-world             uk.gov.hmrc.transitmovementsmessageparser.controllers.MicroserviceHelloWorldController.hello
+GET    /initiate-upload/:messageType    controllers.MessageController.initiateUpload(messageType: RequestMessageType)
+GET    /upload-success/:messageId       controllers.MessageController.onUploadSuccess(messageId: MessageId)
+GET    /upload-failure/:messageId       controllers.MessageController.onUploadFailure(messageId: MessageId)
+POST   /scan-complete/:messageId        controllers.MessageController.onScanComplete(messageId: MessageId)
