@@ -17,8 +17,10 @@
 package models
 
 import models.values.MessageId
+import java.time.Instant
 
-sealed abstract class MessageUpload extends Product with Serializable {
+sealed abstract class Message extends Product with Serializable {
   def messageId: MessageId
   def messageType: MessageType
+  def preparationDateTime: Instant
 }
