@@ -17,25 +17,21 @@
 package connectors
 
 import config.AppConfig
-import io.lemonlabs.uri.UrlPath
+import io.lemonlabs.uri.{AbsoluteUrl, UrlPath}
 import models.formats.HttpFormats
-import models.upscan.UpscanInitiateRequest
-import models.upscan.UpscanInitiateResponse
+import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
 import models.values.MessageId
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class UpscanConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit
   ec: ExecutionContext
 ) extends HttpFormats {
 
-  val initiateUrl =
+  private val initiateUrl: AbsoluteUrl =
     appConfig.upscanInitiateUrl.withPath(UrlPath(Seq("upscan", "v2", "initiate")))
 
   def initiate(messageId: MessageId)(implicit
