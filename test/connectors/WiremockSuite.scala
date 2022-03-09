@@ -26,7 +26,8 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 trait WiremockSuite extends BeforeAndAfterAll with BeforeAndAfterEach {
   this: Suite =>
 
-  protected val wiremockConfig: WireMockConfiguration = wireMockConfig().dynamicPort().notifier(new ConsoleNotifier(false))
+  protected val wiremockConfig: WireMockConfiguration =
+    wireMockConfig().dynamicPort().notifier(new ConsoleNotifier(false))
 
   protected val server: WireMockServer = new WireMockServer(wiremockConfig)
 

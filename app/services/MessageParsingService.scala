@@ -18,6 +18,4 @@ package services
 
 import javax.inject.Inject
 
-class MessageParsingService @Inject() () {
-
-}
+class MessageParsingService @Inject() () {}

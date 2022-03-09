@@ -27,7 +27,14 @@ import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import uk.gov.hmrc.http.HeaderCarrier
 
-trait SpecBase extends AnyFreeSpec with Matchers with MockitoSugar with ScalaFutures with OptionValues with EitherValues with HttpFormats {
+trait SpecBase
+  extends AnyFreeSpec
+  with Matchers
+  with MockitoSugar
+  with ScalaFutures
+  with OptionValues
+  with EitherValues
+  with HttpFormats {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 

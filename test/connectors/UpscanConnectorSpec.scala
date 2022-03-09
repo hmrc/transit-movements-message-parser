@@ -62,13 +62,12 @@ class UpscanConnectorSpec extends SpecBase with WiremockSuite with ScalaCheckPro
         val app = appBuilder.build()
 
         running(app) {
-          val connector = app.injector.instanceOf[UpscanConnector]
+          val connector                     = app.injector.instanceOf[UpscanConnector]
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-          forAll(arbitrary[UUID], arbitrary[String]) {
-            (uuid, reference) =>
-              val responseJson: String =
-                s"""
+          forAll(arbitrary[UUID], arbitrary[String]) { (uuid, reference) =>
+            val responseJson: String =
+              s"""
                   | {
                   |   "reference": "$reference",
                   |   "uploadRequest": {
@@ -78,21 +77,22 @@ class UpscanConnectorSpec extends SpecBase with WiremockSuite with ScalaCheckPro
                   | }
                   |""".stripMargin
 
-              server.stubFor(
-                post(urlEqualTo("/upscan/v2/initiate"))
-                  .withRequestBody(requestJson(uuid))
-                  .willReturn(
-                    aResponse()
-                      .withStatus(OK)
-                      .withBody(responseJson)
-                  )
-              )
+            server.stubFor(
+              post(urlEqualTo("/upscan/v2/initiate"))
+                .withRequestBody(requestJson(uuid))
+                .willReturn(
+                  aResponse()
+                    .withStatus(OK)
+                    .withBody(responseJson)
+                )
+            )
 
-              val result = Await.result(connector.initiate(MessageId(uuid)), Duration.Inf)
-              result.right.get mustBe UpscanInitiateResponse(
-                reference = UpscanReference(reference),
-                uploadRequest = UpscanFormTemplate(AbsoluteUrl.parse(s"$baseUrl/upload-success/$uuid"), Map())
-              )
+            val result = Await.result(connector.initiate(MessageId(uuid)), Duration.Inf)
+            result.right.get mustBe UpscanInitiateResponse(
+              reference = UpscanReference(reference),
+              uploadRequest =
+                UpscanFormTemplate(AbsoluteUrl.parse(s"$baseUrl/upload-success/$uuid"), Map())
+            )
           }
         }
       }
@@ -102,22 +102,21 @@ class UpscanConnectorSpec extends SpecBase with WiremockSuite with ScalaCheckPro
         val app = appBuilder.build()
 
         running(app) {
-          val connector = app.injector.instanceOf[UpscanConnector]
+          val connector                     = app.injector.instanceOf[UpscanConnector]
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-          forAll(arbitrary[UUID], Gen.chooseNum(400, 599)) {
-            (uuid, statusCode) =>
-              server.stubFor(
-                post(urlEqualTo("/upscan/v2/initiate"))
-                  .withRequestBody(requestJson(uuid))
-                  .willReturn(
-                    aResponse()
-                      .withStatus(statusCode)
-                  )
-              )
+          forAll(arbitrary[UUID], Gen.chooseNum(400, 599)) { (uuid, statusCode) =>
+            server.stubFor(
+              post(urlEqualTo("/upscan/v2/initiate"))
+                .withRequestBody(requestJson(uuid))
+                .willReturn(
+                  aResponse()
+                    .withStatus(statusCode)
+                )
+            )
 
-              val result = Await.result(connector.initiate(MessageId(uuid)), Duration.Inf)
-              result.left.get.statusCode mustBe statusCode
+            val result = Await.result(connector.initiate(MessageId(uuid)), Duration.Inf)
+            result.left.get.statusCode mustBe statusCode
           }
         }
       }

@@ -18,10 +18,12 @@ package controllers
 
 import base.SpecBase
 import connectors.UpscanConnector
-import io.lemonlabs.uri.AbsoluteUrl
-import models.MessageType.DeclarationAmendment
-import models.upscan.{UpscanFormTemplate, UpscanInitiateResponse}
-import models.values.{MessageId, UpscanReference}
+import generators.ModelGenerators
+import models.RequestMessageType
+import models.upscan.{UpscanInitiateResponse, UpscanNotification}
+import models.values.MessageId
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.inject.bind
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
@@ -30,7 +32,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import scala.concurrent.Future
 
-class MessageControllerSpec extends SpecBase {
+class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
 
   "MessageController" - {
 
@@ -39,13 +41,6 @@ class MessageControllerSpec extends SpecBase {
       "must return Ok when upscan initiate response returned from connector" in {
         val mockUpscanConnector: UpscanConnector = mock[UpscanConnector]
 
-        val response = UpscanInitiateResponse(
-          UpscanReference("reference"),
-          UpscanFormTemplate(AbsoluteUrl.parse(s"$baseUrl/upload-success/some-uuid"), Map())
-        )
-
-        when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier])).thenReturn(Future.successful(Right(response)))
-
         val application = baseApplicationBuilder
           .overrides(
             bind[UpscanConnector].toInstance(mockUpscanConnector)
@@ -54,26 +49,30 @@ class MessageControllerSpec extends SpecBase {
 
         running(application) {
 
-          val request = FakeRequest(GET, routes.MessageController.initiateUpload(DeclarationAmendment).url)
+          forAll(arbitrary[UpscanInitiateResponse], arbitrary[RequestMessageType]) {
+            (response, messageType) =>
+              reset(mockUpscanConnector)
 
-          val result = route(application, request).value
+              when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier]))
+                .thenReturn(Future.successful(Right(response)))
 
-          status(result) mustEqual OK
+              val request =
+                FakeRequest(GET, routes.MessageController.initiateUpload(messageType).url)
 
-          verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
+              val result = route(application, request).value
 
-          contentAsJson(result) mustEqual Json.toJson(response.uploadRequest)
+              status(result) mustEqual OK
+
+              verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
+
+              contentAsJson(result) mustEqual Json.toJson(response.uploadRequest)
+          }
         }
       }
 
       "must return BadRequest when upstream error response returned from connector" in {
         val mockUpscanConnector: UpscanConnector = mock[UpscanConnector]
 
-        val message = "Some error message"
-        val response = UpstreamErrorResponse(message, INTERNAL_SERVER_ERROR)
-
-        when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier])).thenReturn(Future.successful(Left(response)))
-
         val application = baseApplicationBuilder
           .overrides(
             bind[UpscanConnector].toInstance(mockUpscanConnector)
@@ -82,15 +81,83 @@ class MessageControllerSpec extends SpecBase {
 
         running(application) {
 
-          val request = FakeRequest(GET, routes.MessageController.initiateUpload(DeclarationAmendment).url)
+          forAll(arbitrary[UpstreamErrorResponse], arbitrary[RequestMessageType]) {
+            (response, requestMessageType) =>
+              reset(mockUpscanConnector)
 
-          val result = route(application, request).value
+              when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier]))
+                .thenReturn(Future.successful(Left(response)))
 
-          status(result) mustEqual BAD_REQUEST
+              val request =
+                FakeRequest(GET, routes.MessageController.initiateUpload(requestMessageType).url)
 
-          verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
+              val result = route(application, request).value
 
-          contentAsString(result) mustEqual message
+              status(result) mustEqual BAD_REQUEST
+
+              verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
+
+              contentAsString(result) mustEqual response.message
+          }
+        }
+      }
+    }
+
+    "onUploadSuccess" - {
+      "must return Ok" in {
+        val application = baseApplicationBuilder
+          .build()
+
+        running(application) {
+
+          forAll(arbitrary[MessageId]) { messageId =>
+            val request =
+              FakeRequest(GET, routes.MessageController.onUploadSuccess(messageId).url)
+
+            val result = route(application, request).value
+
+            status(result) mustEqual OK
+          }
+        }
+      }
+    }
+
+    "onUploadFailure" - {
+      "must return BadRequest" in {
+        val application = baseApplicationBuilder
+          .build()
+
+        running(application) {
+
+          forAll(arbitrary[MessageId]) { messageId =>
+            val request =
+              FakeRequest(GET, routes.MessageController.onUploadFailure(messageId).url)
+
+            val result = route(application, request).value
+
+            status(result) mustEqual BAD_REQUEST
+          }
+        }
+      }
+    }
+
+    "onScanComplete" - {
+      "must return Ok" in {
+        val application = baseApplicationBuilder
+          .build()
+
+        running(application) {
+
+          forAll(arbitrary[MessageId], arbitrary[UpscanNotification]) {
+            (messageId, upscanNotification) =>
+              val request =
+                FakeRequest(POST, routes.MessageController.onScanComplete(messageId).url)
+                  .withJsonBody(Json.toJson(upscanNotification))
+
+              val result = route(application, request).value
+
+              status(result) mustEqual OK
+          }
         }
       }
     }
