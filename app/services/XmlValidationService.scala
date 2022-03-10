@@ -81,37 +81,37 @@ class XmlValidationServiceImpl @Inject() ()(implicit mat: Materializer)
     messageType: MessageType,
     xml: Source[ByteString, _]
   ): Either[NonEmptyList[SchemaValidationError], Unit] = {
-      val saxParser = parsersByType(messageType).get()
-      val parser = saxParser.getParser
+    val saxParser = parsersByType(messageType).get()
+    val parser    = saxParser.getParser
 
-      val errorBuffer: mutable.ListBuffer[SchemaValidationError] =
-        new mutable.ListBuffer[SchemaValidationError]
+    val errorBuffer: mutable.ListBuffer[SchemaValidationError] =
+      new mutable.ListBuffer[SchemaValidationError]
 
-      parser.setErrorHandler(new ErrorHandler {
-        override def warning(error: SAXParseException): Unit = {}
-        override def error(error: SAXParseException): Unit = {
-          errorBuffer += SchemaValidationError.fromSaxParseException(error)
-        }
-        override def fatalError(error: SAXParseException): Unit = {
-          errorBuffer += SchemaValidationError.fromSaxParseException(error)
-        }
-      })
+    parser.setErrorHandler(new ErrorHandler {
+      override def warning(error: SAXParseException): Unit = {}
+      override def error(error: SAXParseException): Unit = {
+        errorBuffer += SchemaValidationError.fromSaxParseException(error)
+      }
+      override def fatalError(error: SAXParseException): Unit = {
+        errorBuffer += SchemaValidationError.fromSaxParseException(error)
+      }
+    })
 
-      val xmlInput = xml.runWith(StreamConverters.asInputStream(20.seconds))
+    val xmlInput = xml.runWith(StreamConverters.asInputStream(20.seconds))
 
-      val inputSource = new InputSource(xmlInput)
+    val inputSource = new InputSource(xmlInput)
 
-      val parseXml = Either
-        .catchOnly[SAXParseException] {
-          parser.parse(inputSource)
-        }
-        .leftMap { exc =>
-          NonEmptyList.of(SchemaValidationError.fromSaxParseException(exc))
-        }
+    val parseXml = Either
+      .catchOnly[SAXParseException] {
+        parser.parse(inputSource)
+      }
+      .leftMap { exc =>
+        NonEmptyList.of(SchemaValidationError.fromSaxParseException(exc))
+      }
 
-      NonEmptyList
-        .fromList(errorBuffer.toList)
-        .map(Either.left)
-        .getOrElse(parseXml)
-    }
+    NonEmptyList
+      .fromList(errorBuffer.toList)
+      .map(Either.left)
+      .getOrElse(parseXml)
+  }
 }

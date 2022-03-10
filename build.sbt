@@ -37,6 +37,7 @@ lazy val microservice = Project(appName, file("."))
   )
 
 lazy val buildSettings = Def.settings(
+  scalafmtOnCompile := true,
   scalafixDependencies ++= Seq(
     "com.github.liancheng" %% "organize-imports" % "0.5.0"
   )
@@ -54,7 +55,7 @@ lazy val scalacSettings = Def.settings(
 
 lazy val scoverageSettings = Def.settings(
   Test / parallelExecution := false,
-  ScoverageKeys.coverageMinimumStmtTotal := 90,
+  ScoverageKeys.coverageMinimumStmtTotal := 85,
   ScoverageKeys.coverageFailOnMinimum := true,
   ScoverageKeys.coverageHighlighting := true,
   ScoverageKeys.coverageExcludedPackages := Seq(

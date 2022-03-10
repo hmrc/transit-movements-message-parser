@@ -29,10 +29,7 @@ import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import models.upscan.UpscanSuccessNotification
-import models.upscan.UpscanFailureNotification
+import scala.concurrent.{ExecutionContext, Future}
 
 class MessageController @Inject() (
   upscanConnector: UpscanConnector,
@@ -56,7 +53,6 @@ class MessageController @Inject() (
         BadRequest(value.message)
 
       case Right(result) =>
-
         pprint.pprintln(result)
 
         Ok(Json.toJson(result.uploadRequest))

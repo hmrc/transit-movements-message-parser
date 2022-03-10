@@ -16,6 +16,6 @@
 
 package services
 
-import javax.inject.Inject
+import base.SpecBase
 
-class MessageParsingService @Inject() () {}
+class MessageParsingServiceSpec extends SpecBase {}
