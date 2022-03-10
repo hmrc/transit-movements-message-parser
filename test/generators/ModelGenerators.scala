@@ -16,6 +16,9 @@
 
 package generators
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import io.lemonlabs.uri.AbsoluteUrl
 import models.upscan._
 import models.values.{MessageId, UpscanReference}
@@ -23,7 +26,8 @@ import models.{MessageType, RequestMessageType}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Arbitrary, Gen}
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.objectstore.client.Md5Hash
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5}
+import uk.gov.hmrc.objectstore.client.Path.{Directory, File}
 
 import java.time.Instant
 import java.util.UUID
@@ -33,13 +37,9 @@ trait ModelGenerators {
   implicit lazy val arbitraryUpscanInitiateResponse: Arbitrary[UpscanInitiateResponse] =
     Arbitrary {
       for {
-        upscanReference <- arbitraryUpscanReference.arbitrary
-        href            <- arbitraryAbsoluteUrl.arbitrary
-        fields          <- arbitraryFields.arbitrary
-      } yield UpscanInitiateResponse(
-        upscanReference,
-        UpscanFormTemplate(href, fields)
-      )
+        upscanReference <- arbitrary[UpscanReference]
+        uploadRequest   <- arbitrary[UpscanFormTemplate]
+      } yield UpscanInitiateResponse(upscanReference, uploadRequest)
     }
 
   type Fields = Map[String, String]
@@ -47,6 +47,15 @@ trait ModelGenerators {
     Arbitrary {
       for {
         values <- Gen.listOf(Gen.alphaNumStr)
+        keys   <- Gen.containerOfN[List, String](values.size, Gen.alphaNumStr)
+      } yield keys.zip(values).toMap
+    }
+  }
+
+  implicit lazy val arbitraryHeaders: Arbitrary[Map[String, Seq[String]]] = {
+    Arbitrary {
+      for {
+        values <- Gen.listOf(Gen.listOf(Gen.alphaNumStr))
         keys   <- Gen.containerOfN[List, String](values.size, Gen.alphaNumStr)
       } yield keys.zip(values).toMap
     }
@@ -93,8 +102,8 @@ trait ModelGenerators {
   implicit lazy val arbitraryUpscanNotification: Arbitrary[UpscanNotification] =
     Arbitrary {
       for {
-        success      <- arbitraryUpscanSuccessNotification.arbitrary
-        failure      <- arbitraryUpscanFailureNotification.arbitrary
+        success      <- arbitrary[UpscanSuccessNotification]
+        failure      <- arbitrary[UpscanFailureNotification]
         notification <- Gen.oneOf(success, failure)
       } yield notification
     }
@@ -102,17 +111,17 @@ trait ModelGenerators {
   implicit lazy val arbitraryUpscanSuccessNotification: Arbitrary[UpscanSuccessNotification] =
     Arbitrary {
       for {
-        reference     <- arbitraryUpscanReference.arbitrary
-        downloadUrl   <- arbitraryAbsoluteUrl.arbitrary
-        uploadDetails <- arbitraryUpscanUploadDetails.arbitrary
+        reference     <- arbitrary[UpscanReference]
+        downloadUrl   <- arbitrary[AbsoluteUrl]
+        uploadDetails <- arbitrary[UpscanUploadDetails]
       } yield UpscanSuccessNotification(reference, downloadUrl, Ready, uploadDetails)
     }
 
   implicit lazy val arbitraryUpscanFailureNotification: Arbitrary[UpscanFailureNotification] =
     Arbitrary {
       for {
-        reference      <- arbitraryUpscanReference.arbitrary
-        failureDetails <- arbitraryUpscanFailureDetails.arbitrary
+        reference      <- arbitrary[UpscanReference]
+        failureDetails <- arbitrary[UpscanFailureDetails]
       } yield UpscanFailureNotification(reference, Failed, failureDetails)
     }
 
@@ -122,7 +131,7 @@ trait ModelGenerators {
         fileName        <- Gen.alphaNumStr
         fileMimeType    <- Gen.alphaNumStr
         uploadTimestamp <- arbitrary[Instant]
-        checksum        <- arbitraryMd5Hash.arbitrary
+        checksum        <- arbitrary[Md5Hash]
         size            <- arbitrary[Long]
       } yield UpscanUploadDetails(fileName, fileMimeType, uploadTimestamp, checksum, size)
     }
@@ -130,7 +139,7 @@ trait ModelGenerators {
   implicit lazy val arbitraryUpscanFailureDetails: Arbitrary[UpscanFailureDetails] =
     Arbitrary {
       for {
-        failureReason <- arbitraryUpscanFailureReason.arbitrary
+        failureReason <- arbitrary[UpscanFailureReason]
         message       <- Gen.alphaNumStr
       } yield UpscanFailureDetails(failureReason, message)
     }
@@ -145,5 +154,60 @@ trait ModelGenerators {
   implicit lazy val arbitraryUpscanFailureReason: Arbitrary[UpscanFailureReason] =
     Arbitrary {
       Gen.oneOf(UpscanFailureReason.values)
+    }
+
+  implicit lazy val arbitrarySource: Arbitrary[Source[ByteString, NotUsed]] =
+    Arbitrary {
+      for {
+        values <- Gen.listOf(Gen.alphaNumStr)
+      } yield Source(values).map(ByteString(_))
+    }
+
+  implicit lazy val arbitraryObjectSummaryWithMd5: Arbitrary[ObjectSummaryWithMd5] =
+    Arbitrary {
+      for {
+        file          <- arbitrary[File]
+        contentLength <- arbitrary[Long]
+        contentMd5    <- arbitrary[Md5Hash]
+        lastModified  <- arbitrary[Instant]
+      } yield ObjectSummaryWithMd5(file, contentLength, contentMd5, lastModified)
+    }
+
+  implicit lazy val arbitraryFile: Arbitrary[File] =
+    Arbitrary {
+      for {
+        value    <- Gen.alphaNumStr
+        fileName <- Gen.alphaNumStr.suchThat(_.nonEmpty)
+      } yield File(Directory(value), fileName)
+    }
+
+  implicit lazy val arbitraryUpscanFormTemplate: Arbitrary[UpscanFormTemplate] =
+    Arbitrary {
+      for {
+        href   <- arbitrary[AbsoluteUrl]
+        fields <- arbitrary[Fields]
+      } yield UpscanFormTemplate(href, fields)
+    }
+
+  implicit lazy val arbitraryUpscanFileStatus: Arbitrary[UpscanFileStatus] =
+    Arbitrary {
+      Gen.oneOf(UpscanFileStatus.values)
+    }
+
+  implicit lazy val arbitraryUpscanInitiateRequest: Arbitrary[UpscanInitiateRequest] =
+    Arbitrary {
+      for {
+        callbackUrl     <- arbitrary[AbsoluteUrl]
+        successRedirect <- arbitrary[AbsoluteUrl]
+        errorRedirect   <- arbitrary[AbsoluteUrl]
+        minimumFileSize <- arbitrary[Long]
+        maximumFileSize <- arbitrary[Long]
+      } yield UpscanInitiateRequest(
+        callbackUrl,
+        successRedirect,
+        errorRedirect,
+        minimumFileSize,
+        maximumFileSize
+      )
     }
 }
