@@ -16,12 +16,14 @@
 
 package controllers
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import base.SpecBase
-import connectors.UpscanConnector
+import connectors.{ObjectStoreConnector, UpscanConnector}
 import generators.ModelGenerators
-import models.RequestMessageType
 import models.upscan.{UpscanInitiateResponse, UpscanNotification}
-import models.values.MessageId
+import models.values.{MessageId, MovementId, UpscanReference}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.inject.bind
@@ -30,6 +32,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
+import java.nio.file.{Files, Path}
 import scala.concurrent.Future
 
 class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
@@ -38,7 +41,7 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
     "initiateUpload" - {
 
-      "must return Ok when upscan initiate response returned from connector" in {
+      "must return Created when upscan initiate response returned from connector" in {
         val mockUpscanConnector: UpscanConnector = mock[UpscanConnector]
 
         val application = baseApplicationBuilder
@@ -49,23 +52,22 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
         running(application) {
 
-          forAll(arbitrary[UpscanInitiateResponse], arbitrary[RequestMessageType]) {
-            (response, messageType) =>
-              reset(mockUpscanConnector)
+          forAll(arbitrary[UpscanInitiateResponse]) { (response) =>
+            reset(mockUpscanConnector)
 
-              when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier]))
-                .thenReturn(Future.successful(Right(response)))
+            when(mockUpscanConnector.initiate(any[MovementId])(any[HeaderCarrier]))
+              .thenReturn(Future.successful(Right(response)))
 
-              val request =
-                FakeRequest(GET, routes.MessageController.initiateUpload(messageType).url)
+            val request =
+              FakeRequest(POST, routes.MessageController.createMovement().url)
 
-              val result = route(application, request).value
+            val result = route(application, request).value
 
-              status(result) mustEqual OK
+            status(result) mustEqual CREATED
 
-              verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
+            verify(mockUpscanConnector).initiate(any[MovementId])(any[HeaderCarrier])
 
-              contentAsJson(result) mustEqual Json.toJson(response.uploadRequest)
+            contentAsJson(result) mustEqual Json.toJson(response.uploadRequest)
           }
         }
       }
@@ -81,82 +83,62 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
         running(application) {
 
-          forAll(arbitrary[UpstreamErrorResponse], arbitrary[RequestMessageType]) {
-            (response, requestMessageType) =>
-              reset(mockUpscanConnector)
+          forAll(arbitrary[UpstreamErrorResponse]) { (response) =>
+            reset(mockUpscanConnector)
 
-              when(mockUpscanConnector.initiate(any[MessageId])(any[HeaderCarrier]))
-                .thenReturn(Future.successful(Left(response)))
+            when(mockUpscanConnector.initiate(any[MovementId])(any[HeaderCarrier]))
+              .thenReturn(Future.successful(Left(response)))
 
-              val request =
-                FakeRequest(GET, routes.MessageController.initiateUpload(requestMessageType).url)
-
-              val result = route(application, request).value
-
-              status(result) mustEqual BAD_REQUEST
-
-              verify(mockUpscanConnector).initiate(any[MessageId])(any[HeaderCarrier])
-
-              contentAsString(result) mustEqual response.message
-          }
-        }
-      }
-    }
-
-    "onUploadSuccess" - {
-      "must return Ok" in {
-        val application = baseApplicationBuilder
-          .build()
-
-        running(application) {
-
-          forAll(arbitrary[MessageId]) { messageId =>
             val request =
-              FakeRequest(GET, routes.MessageController.onUploadSuccess(messageId).url)
-
-            val result = route(application, request).value
-
-            status(result) mustEqual OK
-          }
-        }
-      }
-    }
-
-    "onUploadFailure" - {
-      "must return BadRequest" in {
-        val application = baseApplicationBuilder
-          .build()
-
-        running(application) {
-
-          forAll(arbitrary[MessageId]) { messageId =>
-            val request =
-              FakeRequest(GET, routes.MessageController.onUploadFailure(messageId).url)
+              FakeRequest(POST, routes.MessageController.createMovement().url)
 
             val result = route(application, request).value
 
             status(result) mustEqual BAD_REQUEST
+
+            verify(mockUpscanConnector).initiate(any[MovementId])(any[HeaderCarrier])
+
+            contentAsString(result) mustEqual response.message
           }
         }
       }
     }
 
     "onScanComplete" - {
-      "must return Ok" in {
+      "must return Created" in {
+        val mockUpscanConnector: UpscanConnector           = mock[UpscanConnector]
+        val mockObjectStoreConnector: ObjectStoreConnector = mock[ObjectStoreConnector]
+
         val application = baseApplicationBuilder
+          .overrides(
+            bind[UpscanConnector].toInstance(mockUpscanConnector),
+            bind[ObjectStoreConnector].toInstance(mockObjectStoreConnector)
+          )
           .build()
 
         running(application) {
 
-          forAll(arbitrary[MessageId], arbitrary[UpscanNotification]) {
-            (messageId, upscanNotification) =>
-              val request =
-                FakeRequest(POST, routes.MessageController.onScanComplete(messageId).url)
-                  .withJsonBody(Json.toJson(upscanNotification))
+          forAll(
+            arbitrary[MovementId],
+            arbitrary[UpscanNotification]
+          ) { (messageId, upscanNotification) =>
+            val path = Files.createTempFile("test", ".xml")
 
-              val result = route(application, request).value
+            reset(mockUpscanConnector)
+            when(mockUpscanConnector.downloadToFile(any[UpscanReference]))
+              .thenReturn(Future.successful(Right(path)))
 
-              status(result) mustEqual OK
+            reset(mockObjectStoreConnector)
+            when(mockObjectStoreConnector.upload(any[MovementId], any[MessageId], any[Path]))
+              .thenReturn(Future.successful(Right(None)))
+
+            val request =
+              FakeRequest(POST, routes.MessageController.create(messageId).url)
+                .withJsonBody(Json.toJson(upscanNotification))
+
+            val result = route(application, request).value
+
+            status(result) mustEqual CREATED
           }
         }
       }

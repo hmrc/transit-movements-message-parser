@@ -16,14 +16,13 @@
 
 package config
 
+import com.typesafe.config.ConfigMemorySize
+import io.lemonlabs.uri.AbsoluteUrl
 import play.api.Configuration
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import javax.inject.Inject
-import javax.inject.Singleton
-import com.typesafe.config.ConfigMemorySize
-import io.lemonlabs.uri.AbsoluteUrl
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesConfig) {
@@ -37,8 +36,13 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
 
   val upscanInitiateUrl: AbsoluteUrl =
     AbsoluteUrl.parse(servicesConfig.baseUrl("upscan-initiate"))
+  val upscanUrl: AbsoluteUrl =
+    AbsoluteUrl.parse(servicesConfig.baseUrl("upscan"))
   val upscanMinimumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.minimum-file-size").toBytes
   val upscanMaximumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.maximum-file-size").toBytes
+
+  val sdesUrl: String = servicesConfig.baseUrl("sdes")
+  val sdesFilereadyUri: String = config.get("microservice.services.sdes.uri")
 }

@@ -19,50 +19,39 @@ package connectors
 import config.AppConfig
 import io.lemonlabs.uri.{AbsoluteUrl, UrlPath}
 import models.formats.HttpFormats
+import models.sdes.{SdesFilereadyRequest, SdesFilereadyResponse}
 import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
-import models.values.{MovementId, UpscanReference}
+import models.values.{MessageId, MovementId, UpscanReference}
 import services.MessageDownloadService
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
+import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class UpscanConnector @Inject() (
+class SdesConnector @Inject()(
   http: HttpClient,
-  appConfig: AppConfig,
-  downloadService: MessageDownloadService
+  appConfig: AppConfig
 )(implicit
   ec: ExecutionContext
 ) extends HttpFormats {
 
-  private val initiateUrl: AbsoluteUrl =
-    appConfig.upscanInitiateUrl.withPath(UrlPath(Seq("upscan", "v2", "initiate")))
-  private val upscanUrl: AbsoluteUrl = appConfig.upscanUrl
+  private val sdesUrl: String = appConfig.sdesUrl
+  private val sdesUri: String = appConfig.sdesFilereadyUri
 
-  def initiate(movementId: MovementId)(implicit
+  def send(movementId: MovementId, messageId: MessageId)(implicit
     hc: HeaderCarrier
   ): Future[Either[UpstreamErrorResponse, UpscanInitiateResponse]] = {
-    val scanCompletePath =
-      UrlPath.parse(controllers.routes.MessageController.create(movementId).path())
-
-    val initiateRequest = UpscanInitiateRequest(
-      callbackUrl = appConfig.selfUrl.withPath(scanCompletePath),
-      minimumFileSize = appConfig.upscanMinimumFileSize,
-      maximumFileSize = appConfig.upscanMaximumFileSize
+    val request = SdesFilereadyRequest(
+      UUID.randomUUID.toString,
+      ObjectStoreConnector.pathFrom(movementId, messageId)
     )
 
-    http.POST[UpscanInitiateRequest, Either[UpstreamErrorResponse, UpscanInitiateResponse]](
-      initiateUrl.toString,
-      initiateRequest
+    http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, SdesFilereadyResponse]](
+      sdesUrl + sdesUri,
+      request
     )
-  }
-
-  def downloadToFile(
-    reference: UpscanReference
-  ) = {
-    val url = upscanUrl.withPath(UrlPath(Seq("upscan", "download", reference.value)))
-    downloadService.downloadToTemporaryFile(url)
   }
 
 }

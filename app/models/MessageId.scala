@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-package models.values
+package models
 
-import play.api.libs.json.{Format, Json}
-
-case class UpscanReference(value: String) extends AnyVal
-
-object UpscanReference {
-  implicit val upscanReferenceFormat: Format[UpscanReference] =
-    Json.valueFormat[UpscanReference]
-}
+case class MessageId(value: String) extends AnyVal

@@ -18,9 +18,13 @@ package models.values
 
 import play.api.libs.json.{Format, Json}
 
-case class UpscanReference(value: String) extends AnyVal
+import java.util.UUID
 
-object UpscanReference {
-  implicit val upscanReferenceFormat: Format[UpscanReference] =
-    Json.valueFormat[UpscanReference]
+case class MovementId(value: UUID) extends AnyVal
+
+object MovementId {
+  def next(): MovementId = MovementId(UUID.randomUUID())
+
+  implicit val messageIdFormat: Format[MovementId] =
+    Json.valueFormat[MovementId]
 }

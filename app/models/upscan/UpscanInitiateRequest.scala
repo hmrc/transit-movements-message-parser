@@ -20,8 +20,6 @@ import io.lemonlabs.uri.AbsoluteUrl
 
 case class UpscanInitiateRequest(
   callbackUrl: AbsoluteUrl,
-  successRedirect: AbsoluteUrl,
-  errorRedirect: AbsoluteUrl,
   minimumFileSize: Long,
   maximumFileSize: Long
 )

@@ -202,8 +202,6 @@ class HttpFormatsSpec extends SpecBase with ScalaCheckPropertyChecks with ModelG
           val json = Json.parse(s"""
                |{
                |  "callbackUrl": "${upscanInitiateRequest.callbackUrl.toString}",
-               |  "successRedirect": "${upscanInitiateRequest.successRedirect.toString}",
-               |  "errorRedirect": "${upscanInitiateRequest.errorRedirect.toString}",
                |  "minimumFileSize": ${upscanInitiateRequest.minimumFileSize},
                |  "maximumFileSize": ${upscanInitiateRequest.maximumFileSize}
                |}

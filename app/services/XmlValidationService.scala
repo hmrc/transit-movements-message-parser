@@ -17,24 +17,19 @@
 package services
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.StreamConverters
+import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import com.google.inject.ImplementedBy
 import models.MessageType
 import models.errors.SchemaValidationError
-import org.xml.sax.ErrorHandler
-import org.xml.sax.InputSource
-import org.xml.sax.SAXParseException
+import org.xml.sax.{ErrorHandler, InputSource, SAXParseException}
 import play.api.Logging
 
-import javax.inject.Inject
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 import javax.xml.XMLConstants
-import javax.xml.parsers.SAXParser
-import javax.xml.parsers.SAXParserFactory
+import javax.xml.parsers.{SAXParser, SAXParserFactory}
 import javax.xml.validation.SchemaFactory
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext

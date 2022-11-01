@@ -16,15 +16,13 @@
 
 package models.formats
 
-import io.lemonlabs.uri.AbsoluteUrl
-import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.{AbsoluteUrl, Uri}
 import models.upscan._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.objectstore.client.Md5Hash
 
 import java.net.URI
-import models.upscan.UpscanInitiateResponse
 
 trait HttpFormats extends CommonFormats {
   implicit val absoluteUrlFormat: Format[AbsoluteUrl] = Format
@@ -74,4 +72,7 @@ trait HttpFormats extends CommonFormats {
 
   implicit val upscanInitiateResponseFormat: OFormat[UpscanInitiateResponse] =
     Json.format[UpscanInitiateResponse]
+
+  implicit val createMovementResponseFormat: OFormat[CreateMovementResponse] =
+    Json.format[CreateMovementResponse]
 }

@@ -22,15 +22,13 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.objectstore.client.Md5Hash
-import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.play.Implicits._
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClientEither
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5}
 
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class MessageUploadService @Inject() (
   objectStore: PlayObjectStoreClientEither,

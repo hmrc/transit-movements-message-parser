@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package models.values
+package models.upscan
 
-import play.api.libs.json.{Format, Json}
+import models.values.MovementId
 
-case class UpscanReference(value: String) extends AnyVal
-
-object UpscanReference {
-  implicit val upscanReferenceFormat: Format[UpscanReference] =
-    Json.valueFormat[UpscanReference]
-}
+case class CreateMovementResponse(
+  movementId: MovementId,
+  uploadRequest: UpscanFormTemplate
+)

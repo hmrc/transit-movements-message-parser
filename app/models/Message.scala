@@ -16,11 +16,12 @@
 
 package models
 
-import models.values.MessageId
+import models.values.MovementId
+
 import java.time.Instant
 
 sealed abstract class Message extends Product with Serializable {
-  def messageId: MessageId
+  def messageId: MovementId
   def messageType: MessageType
   def preparationDateTime: Instant
 }
