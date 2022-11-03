@@ -17,12 +17,12 @@
 package connectors
 
 import config.AppConfig
-import io.lemonlabs.uri.{AbsoluteUrl, UrlPath}
+import io.lemonlabs.uri.AbsoluteUrl
 import models.formats.HttpFormats
-import models.sdes.{SdesFilereadyRequest, SdesFilereadyResponse}
-import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
-import models.values.{MessageId, MovementId, UpscanReference}
-import services.MessageDownloadService
+import models.sdes._
+import models.values.{MessageId, MovementId}
+import play.api.libs.json
+import play.api.libs.json.Json
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
@@ -30,28 +30,45 @@ import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class SdesConnector @Inject()(
+class SdesConnector @Inject() (
   http: HttpClient,
   appConfig: AppConfig
 )(implicit
   ec: ExecutionContext
 ) extends HttpFormats {
 
-  private val sdesUrl: String = appConfig.sdesUrl
-  private val sdesUri: String = appConfig.sdesFilereadyUri
+  private val sdesUrl = AbsoluteUrl.parse(appConfig.sdesUrl + appConfig.sdesFilereadyUri)
 
   def send(movementId: MovementId, messageId: MessageId)(implicit
     hc: HeaderCarrier
-  ): Future[Either[UpstreamErrorResponse, UpscanInitiateResponse]] = {
+  ): Future[Either[UpstreamErrorResponse, SdesFilereadyResponse]] = {
     val request = SdesFilereadyRequest(
-      UUID.randomUUID.toString,
-      ObjectStoreConnector.pathFrom(movementId, messageId)
+      file = SdesFile(
+        "lovefromme",
+        "ie015.xml",
+        pathFrom(movementId, messageId).toString(),
+        SdesChecksum("hhh"),
+        200,
+        SdesProperties()
+      ),
+      1,
+      SdesAudit(UUID.randomUUID.toString)
     )
 
+    println()
+    println()
+    println(Json.toJson(request))
+    println()
+    println()
+
     http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, SdesFilereadyResponse]](
-      sdesUrl + sdesUri,
+      sdesUrl.toString(),
       request
     )
   }
+
+  // probably should be in an object-store specific class
+  def pathFrom(movementId: MovementId, messageId: MessageId): AbsoluteUrl =
+    AbsoluteUrl.parse(s"movements/${movementId.value}/messages/${messageId.value}")
 
 }

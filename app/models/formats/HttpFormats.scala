@@ -17,6 +17,7 @@
 package models.formats
 
 import io.lemonlabs.uri.{AbsoluteUrl, Uri}
+import models.sdes._
 import models.upscan._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -75,4 +76,22 @@ trait HttpFormats extends CommonFormats {
 
   implicit val createMovementResponseFormat: OFormat[CreateMovementResponse] =
     Json.format[CreateMovementResponse]
+
+  implicit val sdesFilereadyRequestFormat: OFormat[SdesFilereadyRequest] =
+    Json.format[SdesFilereadyRequest]
+
+  implicit val sdesFileFormat: OFormat[SdesFile] =
+    Json.format[SdesFile]
+
+  implicit val sdesAuditFormat: OFormat[SdesAudit] =
+    Json.format[SdesAudit]
+
+  implicit val sdesChecksumFormat: OFormat[SdesChecksum] =
+    Json.format[SdesChecksum]
+
+  implicit val sdesPropertiesFormat: OFormat[SdesProperties] =
+    Json.format[SdesProperties]
+
+  implicit val sdesFilereadyResponseFormat: OFormat[SdesFilereadyResponse] =
+    Json.format[SdesFilereadyResponse]
 }

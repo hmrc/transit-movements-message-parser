@@ -43,6 +43,6 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val upscanMaximumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.maximum-file-size").toBytes
 
-  val sdesUrl: String = servicesConfig.baseUrl("sdes")
-  val sdesFilereadyUri: String = config.get("microservice.services.sdes.uri")
+  val sdesUrl: String          = servicesConfig.baseUrl("sdes")
+  val sdesFilereadyUri: String = config.get[String]("microservice.services.sdes.uri")
 }

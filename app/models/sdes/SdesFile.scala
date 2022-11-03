@@ -16,6 +16,13 @@
 
 package models.sdes
 
-case class SdesFilereadyResponse(
-  correlationId: String
+import io.lemonlabs.uri.AbsoluteUrl
+
+case class SdesFile(
+  recipientOrSender: String,
+  name: String,
+  location: String,
+  checksum: SdesChecksum,
+  size: Int,
+  properties: SdesProperties // ?? message sender ??
 )

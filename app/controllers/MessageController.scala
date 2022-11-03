@@ -19,7 +19,7 @@ package controllers
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import connectors.{ObjectStoreConnector, UpscanConnector}
+import connectors.{ObjectStoreConnector, SdesConnector, UpscanConnector}
 import models.formats.HttpFormats
 import models.upscan.CreateMovementResponse
 import models.values.{MessageId, MovementId, UpscanReference}
@@ -39,6 +39,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class MessageController @Inject() (
   upscanConnector: UpscanConnector,
   objectStoreConnector: ObjectStoreConnector,
+  sdesConnector: SdesConnector,
   cc: ControllerComponents
 )(implicit mat: Materializer, ec: ExecutionContext)
   extends BackendController(cc)
@@ -94,6 +95,7 @@ class MessageController @Inject() (
               case Right(_) => {
                 // 3. forward on the file to SDES
                 // TODO forward on the file to SDES
+                sdesConnector.send(movementId, messageId)
                 Future.successful(Created)
               }
               case Left(_) => {

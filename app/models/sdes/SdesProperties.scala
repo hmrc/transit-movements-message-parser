@@ -16,6 +16,4 @@
 
 package models.sdes
 
-case class SdesFilereadyResponse(
-  correlationId: String
-)
+case class SdesProperties(name: String = "encryptionKeyVersion", value: String = "1")

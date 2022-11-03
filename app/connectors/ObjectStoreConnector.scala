@@ -44,7 +44,8 @@ class ObjectStoreConnector @Inject() (
   )(implicit hc: HeaderCarrier): Future[Either[Result, _]] = {
     client
       .putObject(
-        path = Path.Directory(s"movements/${movementId.value}/messages").file(s"${messageId.value}.xml"),
+        path =
+          Path.Directory(s"movements/${movementId.value}/messages").file(s"${messageId.value}.xml"),
         content = path.toFile,
         contentType = Some("application/xml")
       )
