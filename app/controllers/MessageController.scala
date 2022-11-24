@@ -61,9 +61,12 @@ class MessageController @Inject() (
       case Left(error: UpstreamErrorResponse) =>
         BadRequest(error.message)
 
-      case Right(result) =>
+      case Right(result) => {
         // TODO Save metadata to database
+        println("Created")
         Created(toJson(CreateMovementResponse(movementId, result.uploadRequest)))
+      }
+
     }
   }
 
@@ -85,20 +88,24 @@ class MessageController @Inject() (
           // TODO Create new message record
           val messageId = MessageId.next()
           // TODO extract meta data, inc file type
-          // TODO validate file against XSD
+          // TODO validate file against XSD - how do we do this? Forward the URL?
           // TODO set message sender
           // TODO set message record as Pending
           // 2. store the file in object-store
+          println("uploading to object store")
           objectStoreConnector
             .upload(movementId, messageId, path)
             .flatMap(_ match {
               case Right(_) => {
                 // 3. forward on the file to SDES
                 // TODO forward on the file to SDES
+                println("forwarding to SDES")
                 sdesConnector.send(movementId, messageId)
+                println("sdes request sent")
                 Future.successful(Created)
               }
               case Left(_) => {
+                println("forwarding to object store failed")
                 Future.successful(InternalServerError)
                 // TODO store the error in the message record and status = Failed?
                 // TODO push a failure message out to PPNS?
@@ -137,9 +144,10 @@ class MessageController @Inject() (
 
   // callback from SDES when the file has been processed
   // /rpc/sdes/callback
-  def sdessuccess(movementId: MovementId, messageId: MessageId) = Action.async(parse.json) {
-    request =>
+  def sdessuccess(movementId: MovementId = MovementId(), messageId: MessageId = MessageId()) =
+    Action.async(parse.json) { request =>
+      println(s"callback for: $movementId $messageId")
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
-  }
+    }
 }

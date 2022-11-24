@@ -26,72 +26,73 @@ import uk.gov.hmrc.objectstore.client.Md5Hash
 import java.net.URI
 
 trait HttpFormats extends CommonFormats {
-  implicit val absoluteUrlFormat: Format[AbsoluteUrl] = Format
+  implicit lazy val absoluteUrlFormat: Format[AbsoluteUrl] = Format
     .of[URI]
     .inmap[AbsoluteUrl](
       Uri(_).toUrl.toAbsoluteUrl,
       _.toJavaURI
     )
 
-  implicit val md5HashFormat: Format[Md5Hash] = Format
+  implicit lazy val md5HashFormat: Format[Md5Hash] = Format
     .of[String]
     .inmap(Md5Hash.apply, _.value)
 
-  implicit val upscanFileStatusFormat: Format[UpscanFileStatus] =
+  implicit lazy val upscanFileStatusFormat: Format[UpscanFileStatus] =
     enumFormat(UpscanFileStatus.values)(_.name)
 
-  implicit val upscanFailureReasonFormat: Format[UpscanFailureReason] =
+  implicit lazy val upscanFailureReasonFormat: Format[UpscanFailureReason] =
     enumFormat(UpscanFailureReason.values)(_.name)
 
-  implicit val upscanUploadDetailsFormat: OFormat[UpscanUploadDetails] =
+  implicit lazy val upscanUploadDetailsFormat: OFormat[UpscanUploadDetails] =
     Json.format[UpscanUploadDetails]
-  implicit val upscanFailureDetailsFormat: OFormat[UpscanFailureDetails] =
+  implicit lazy val upscanFailureDetailsFormat: OFormat[UpscanFailureDetails] =
     Json.format[UpscanFailureDetails]
 
-  implicit val upscanSuccessNotificationFormat: OFormat[UpscanSuccessNotification] =
+  implicit lazy val upscanSuccessNotificationFormat: OFormat[UpscanSuccessNotification] =
     Json.format[UpscanSuccessNotification]
-  implicit val upscanFailureNotificationFormat: OFormat[UpscanFailureNotification] =
+  implicit lazy val upscanFailureNotificationFormat: OFormat[UpscanFailureNotification] =
     Json.format[UpscanFailureNotification]
 
-  implicit val upscanNotificationReads: Reads[UpscanNotification] =
+  implicit lazy val upscanNotificationReads: Reads[UpscanNotification] =
     (__ \ "fileStatus").read[UpscanFileStatus].flatMap {
       case Ready  => upscanSuccessNotificationFormat.widen[UpscanNotification]
       case Failed => upscanFailureNotificationFormat.widen[UpscanNotification]
     }
 
-  implicit val upscanNotificationFormat: OFormat[UpscanNotification] =
+  implicit lazy val upscanNotificationFormat: OFormat[UpscanNotification] =
     OFormat(
       upscanNotificationReads,
       Json.writes[UpscanNotification]
     )
 
-  implicit val upscanInitiateRequestFormat: OFormat[UpscanInitiateRequest] =
+  implicit lazy val upscanInitiateRequestFormat: OFormat[UpscanInitiateRequest] = {
     Json.format[UpscanInitiateRequest]
+  }
 
-  implicit val upscanFormTemplateFormat: OFormat[UpscanFormTemplate] =
+  implicit lazy val upscanFormTemplateFormat: OFormat[UpscanFormTemplate] =
     Json.format[UpscanFormTemplate]
 
-  implicit val upscanInitiateResponseFormat: OFormat[UpscanInitiateResponse] =
+  implicit lazy val upscanInitiateResponseFormat: OFormat[UpscanInitiateResponse] =
     Json.format[UpscanInitiateResponse]
 
-  implicit val createMovementResponseFormat: OFormat[CreateMovementResponse] =
+  implicit lazy val createMovementResponseFormat: OFormat[CreateMovementResponse] =
     Json.format[CreateMovementResponse]
 
-  implicit val sdesFilereadyRequestFormat: OFormat[SdesFilereadyRequest] =
+  implicit lazy val sdesFilereadyRequestFormat: OFormat[SdesFilereadyRequest] =
     Json.format[SdesFilereadyRequest]
 
-  implicit val sdesFileFormat: OFormat[SdesFile] =
+  implicit lazy val sdesFileFormat: OFormat[SdesFile] =
     Json.format[SdesFile]
 
-  implicit val sdesAuditFormat: OFormat[SdesAudit] =
+  implicit lazy val sdesAuditFormat: OFormat[SdesAudit] =
     Json.format[SdesAudit]
 
-  implicit val sdesChecksumFormat: OFormat[SdesChecksum] =
+  implicit lazy val sdesChecksumFormat: OFormat[SdesChecksum] =
     Json.format[SdesChecksum]
 
-  implicit val sdesPropertiesFormat: OFormat[SdesProperties] =
+  implicit lazy val sdesPropertiesFormat: OFormat[SdesProperties] =
     Json.format[SdesProperties]
 
-  implicit val sdesFilereadyResponseFormat: OFormat[SdesFilereadyResponse] =
+  implicit lazy val sdesFilereadyResponseFormat: OFormat[SdesFilereadyResponse] =
     Json.format[SdesFilereadyResponse]
 }

@@ -29,6 +29,9 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val objectStoreDirectory: Path.Directory =
     Path.Directory(config.get[String]("object-store.default-directory"))
 
+  val objectStoreRoot: AbsoluteUrl =
+    AbsoluteUrl.parse(servicesConfig.baseUrl("object-store"))
+
   val appName = config.get[String]("appName")
 
   val selfUrl: AbsoluteUrl =

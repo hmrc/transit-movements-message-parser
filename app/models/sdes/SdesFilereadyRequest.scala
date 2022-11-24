@@ -17,8 +17,7 @@
 package models.sdes
 
 case class SdesFilereadyRequest(
+  informationType: String,
   file: SdesFile,
-  size: Int,
-  audit: SdesAudit,
-  informationType: String = "S18"
+  audit: SdesAudit
 )

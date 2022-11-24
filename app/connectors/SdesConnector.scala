@@ -41,34 +41,38 @@ class SdesConnector @Inject() (
 
   def send(movementId: MovementId, messageId: MessageId)(implicit
     hc: HeaderCarrier
-  ): Future[Either[UpstreamErrorResponse, SdesFilereadyResponse]] = {
+  ): Future[Either[UpstreamErrorResponse, Unit]] = {
     val request = SdesFilereadyRequest(
+      "S18",
       file = SdesFile(
-        "lovefromme",
+        "ctc_forward",
         "ie015.xml",
         pathFrom(movementId, messageId).toString(),
         SdesChecksum("hhh"),
         200,
-        SdesProperties()
+        Seq(SdesProperties.default)
       ),
-      1,
       SdesAudit(UUID.randomUUID.toString)
     )
 
-    println()
-    println()
-    println(Json.toJson(request))
-    println()
-    println()
+    println("sdes")
+//    println(Json.toJson(request))
 
-    http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, SdesFilereadyResponse]](
+    http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, Unit]](
       sdesUrl.toString(),
       request
     )
   }
 
   // probably should be in an object-store specific class
-  def pathFrom(movementId: MovementId, messageId: MessageId): AbsoluteUrl =
-    AbsoluteUrl.parse(s"movements/${movementId.value}/messages/${messageId.value}")
+  def pathFrom(movementId: MovementId, messageId: MessageId): AbsoluteUrl = {
+    val res = AbsoluteUrl.parse(
+      s"${appConfig.objectStoreRoot}/movements/${movementId.value}/messages/${messageId.value}"
+    )
+
+    println(s"path: $res")
+
+    res
+  }
 
 }

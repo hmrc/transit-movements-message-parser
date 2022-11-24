@@ -16,13 +16,11 @@
 
 package models.sdes
 
-import io.lemonlabs.uri.AbsoluteUrl
-
 case class SdesFile(
   recipientOrSender: String,
   name: String,
   location: String,
   checksum: SdesChecksum,
   size: Int,
-  properties: SdesProperties // ?? message sender ??
+  properties: Seq[SdesProperties] // ?? message sender ??
 )

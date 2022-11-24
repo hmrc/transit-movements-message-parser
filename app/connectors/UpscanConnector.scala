@@ -52,10 +52,17 @@ class UpscanConnector @Inject() (
       maximumFileSize = appConfig.upscanMaximumFileSize
     )
 
-    http.POST[UpscanInitiateRequest, Either[UpstreamErrorResponse, UpscanInitiateResponse]](
-      initiateUrl.toString,
-      initiateRequest
-    )
+    println("initiate begin")
+
+    val res =
+      http.POST[UpscanInitiateRequest, Either[UpstreamErrorResponse, UpscanInitiateResponse]](
+        initiateUrl.toString,
+        initiateRequest
+      )
+
+    println("initiate complete")
+
+    res
   }
 
   def downloadToFile(

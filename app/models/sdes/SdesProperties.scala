@@ -16,4 +16,8 @@
 
 package models.sdes
 
-case class SdesProperties(name: String = "encryptionKeyVersion", value: String = "1")
+case class SdesProperties(name: String, value: String)
+
+object SdesProperties {
+  val default = SdesProperties("encryptionKeyVersion", "1")
+}
