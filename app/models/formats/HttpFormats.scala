@@ -95,4 +95,5 @@ trait HttpFormats extends CommonFormats {
 
   implicit lazy val sdesFilereadyResponseFormat: OFormat[SdesFilereadyResponse] =
     Json.format[SdesFilereadyResponse]
+
 }

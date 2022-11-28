@@ -3,6 +3,6 @@
 POST    /movements                                  controllers.MessageController.createMovement()
 POST    /movements/:movementId/messages             controllers.MessageController.create(movementId: MovementId)
 GET     /movements/:movementId/messages/:messageId  controllers.MessageController.get(movementId: MovementId, messageId: MessageId)
-POST    /rpc/sdes/callback                          controllers.MessageController.sdessuccess(movementId: MovementId, messageId: MessageId)
+POST    /rpc/sdes/callback                          controllers.MessageController.sdessuccess()
 
 

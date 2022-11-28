@@ -50,13 +50,12 @@ class SdesConnector @Inject() (
         pathFrom(movementId, messageId).toString(),
         SdesChecksum("hhh"),
         200,
-        Seq(SdesProperties.default)
+        Seq(SdesProperties("movementId", "test"), SdesProperties("messageId", "test2"))
       ),
       SdesAudit(UUID.randomUUID.toString)
     )
 
     println("sdes")
-//    println(Json.toJson(request))
 
     http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, Unit]](
       sdesUrl.toString(),

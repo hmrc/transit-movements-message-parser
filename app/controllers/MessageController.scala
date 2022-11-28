@@ -21,10 +21,12 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import connectors.{ObjectStoreConnector, SdesConnector, UpscanConnector}
 import models.formats.HttpFormats
+import models.sdes.SdesNotificationItem
 import models.upscan.CreateMovementResponse
 import models.values.{MessageId, MovementId, UpscanReference}
 import play.api.Logging
 import play.api.i18n.I18nSupport
+import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.http.UpstreamErrorResponse
@@ -144,8 +146,12 @@ class MessageController @Inject() (
 
   // callback from SDES when the file has been processed
   // /rpc/sdes/callback
-  def sdessuccess(movementId: MovementId = MovementId(), messageId: MessageId = MessageId()) =
+  def sdessuccess =
     Action.async(parse.json) { request =>
+      println(request.body)
+      val item       = request.body.validate[SdesNotificationItem].get
+      val movementId = item.properties.find(p => p.name == "movementId").get.value
+      val messageId  = item.properties.find(p => p.name == "messageId").get.value
       println(s"callback for: $movementId $messageId")
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
