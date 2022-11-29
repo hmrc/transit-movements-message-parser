@@ -19,8 +19,8 @@ package controllers
 import base.SpecBase
 import connectors.{ObjectStoreConnector, UpscanConnector}
 import generators.ModelGenerators
-import models.upscan.{UpscanInitiateResponse, UpscanNotification}
-import models.values.{MessageId, MovementId, UpscanReference}
+import models.upscan.{UpscanInitiateResponse, UpscanSuccessNotification}
+import models.values.{MessageId, MovementId}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.inject.bind
@@ -28,8 +28,9 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import org.mockito.ArgumentMatchers.{eq => eqTo}
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 import scala.concurrent.Future
 
 class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
@@ -64,7 +65,11 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
             verify(mockUpscanConnector).initiate(any[MovementId])(any[HeaderCarrier])
 
-            contentAsJson(result) mustEqual Json.toJson(response.uploadRequest)
+            val movementId = contentAsJson(result) \ "movementId"
+            contentAsJson(result) mustEqual Json.obj(
+              "movementId"    -> movementId.get,
+              "uploadRequest" -> response.uploadRequest
+            )
           }
         }
       }
@@ -117,20 +122,26 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
           forAll(
             arbitrary[MovementId],
-            arbitrary[UpscanNotification]
-          ) { (messageId, upscanNotification) =>
+            arbitrary[UpscanSuccessNotification]
+          ) { (movementId, upscanNotification) =>
             val path = Files.createTempFile("test", ".xml")
 
             reset(mockUpscanConnector)
-            when(mockUpscanConnector.downloadToFile(any[UpscanReference]))
+            when(mockUpscanConnector.downloadToFile(eqTo(upscanNotification.reference)))
               .thenReturn(Future.successful(Right(path)))
 
             reset(mockObjectStoreConnector)
-            when(mockObjectStoreConnector.upload(any[MovementId], any[MessageId], any[Path]))
+            when(
+              mockObjectStoreConnector.upload(
+                eqTo(movementId),
+                any[String].asInstanceOf[MessageId],
+                eqTo(path)
+              )(any[HeaderCarrier])
+            )
               .thenReturn(Future.successful(Right(None)))
 
             val request =
-              FakeRequest(POST, routes.MessageController.create(messageId).url)
+              FakeRequest(POST, routes.MessageController.create(movementId).url)
                 .withJsonBody(Json.toJson(upscanNotification))
 
             val result = route(application, request).value

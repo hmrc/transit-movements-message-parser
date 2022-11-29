@@ -17,7 +17,6 @@
 package models.upscan
 
 import models.values.MovementId
-
 case class CreateMovementResponse(
   movementId: MovementId,
   uploadRequest: UpscanFormTemplate

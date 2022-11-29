@@ -21,8 +21,6 @@ import io.lemonlabs.uri.AbsoluteUrl
 import models.formats.HttpFormats
 import models.sdes._
 import models.values.{MessageId, MovementId}
-import play.api.libs.json
-import play.api.libs.json.Json
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 

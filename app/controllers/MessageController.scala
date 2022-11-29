@@ -26,7 +26,6 @@ import models.upscan.CreateMovementResponse
 import models.values.{MessageId, MovementId, UpscanReference}
 import play.api.Logging
 import play.api.i18n.I18nSupport
-import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.http.UpstreamErrorResponse

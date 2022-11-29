@@ -16,6 +16,4 @@
 
 package models.sdes
 
-import java.util.UUID
-
 case class SdesAudit(correlationID: String)
