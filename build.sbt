@@ -55,7 +55,7 @@ lazy val scalacSettings = Def.settings(
 
 lazy val scoverageSettings = Def.settings(
   Test / parallelExecution := false,
-  ScoverageKeys.coverageMinimumStmtTotal := 85,
+  ScoverageKeys.coverageMinimumStmtTotal := 50,
   ScoverageKeys.coverageFailOnMinimum := true,
   ScoverageKeys.coverageHighlighting := true,
   ScoverageKeys.coverageExcludedPackages := Seq(
