@@ -16,8 +16,7 @@
 
 package models.values
 
-import play.api.libs.json.Format
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json}
 
 import java.util.UUID
 

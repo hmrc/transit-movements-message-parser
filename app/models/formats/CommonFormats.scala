@@ -18,12 +18,7 @@ package models.formats
 
 import cats.data.NonEmptyList
 import play.api.libs.functional.syntax._
-import play.api.libs.json.Format
-import play.api.libs.json.JsError
-import play.api.libs.json.JsResult
-import play.api.libs.json.JsString
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 
 object CommonFormats extends CommonFormats
 

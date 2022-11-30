@@ -22,7 +22,7 @@ import config.AppConfig
 import generators.ModelGenerators
 import io.lemonlabs.uri.AbsoluteUrl
 import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
-import models.values.MessageId
+import models.values.MovementId
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -56,9 +56,7 @@ class UpscanConnectorSpec
 
       def request(uuid: UUID)(implicit appConfig: AppConfig): UpscanInitiateRequest =
         UpscanInitiateRequest(
-          callbackUrl = AbsoluteUrl.parse(s"$baseUrl/scan-complete/$uuid"),
-          successRedirect = AbsoluteUrl.parse(s"$baseUrl/upload-success/$uuid"),
-          errorRedirect = AbsoluteUrl.parse(s"$baseUrl/upload-failure/$uuid"),
+          callbackUrl = AbsoluteUrl.parse(s"$baseUrl/movements/$uuid/messages"),
           minimumFileSize = appConfig.upscanMinimumFileSize,
           maximumFileSize = appConfig.upscanMaximumFileSize
         )
@@ -71,19 +69,20 @@ class UpscanConnectorSpec
           val connector                     = app.injector.instanceOf[UpscanConnector]
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-          forAll(arbitrary[MessageId], arbitrary[UpscanInitiateResponse]) { (messageId, response) =>
-            server.stubFor(
-              post(urlEqualTo(url))
-                .withRequestBody(equalToJson(stringify(request(messageId.value))))
-                .willReturn(
-                  aResponse()
-                    .withStatus(OK)
-                    .withBody(stringify(response))
-                )
-            )
+          forAll(arbitrary[MovementId], arbitrary[UpscanInitiateResponse]) {
+            (messageId, response) =>
+              server.stubFor(
+                post(urlEqualTo(url))
+                  .withRequestBody(equalToJson(stringify(request(messageId.value))))
+                  .willReturn(
+                    aResponse()
+                      .withStatus(OK)
+                      .withBody(stringify(response))
+                  )
+              )
 
-            val result = Await.result(connector.initiate(messageId), Duration.Inf)
-            result.right.get mustBe response
+              val result = Await.result(connector.initiate(messageId), Duration.Inf)
+              result.right.get mustBe response
           }
         }
       }
@@ -96,7 +95,7 @@ class UpscanConnectorSpec
           val connector                     = app.injector.instanceOf[UpscanConnector]
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-          forAll(arbitrary[MessageId], Gen.chooseNum(400, 599)) { (messageId, statusCode) =>
+          forAll(arbitrary[MovementId], Gen.chooseNum(400, 599)) { (messageId, statusCode) =>
             server.stubFor(
               post(urlEqualTo(url))
                 .withRequestBody(equalToJson(stringify(request(messageId.value))))

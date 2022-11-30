@@ -20,42 +20,56 @@ import config.AppConfig
 import io.lemonlabs.uri.{AbsoluteUrl, UrlPath}
 import models.formats.HttpFormats
 import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
-import models.values.MessageId
+import models.values.{MovementId, UpscanReference}
+import services.MessageDownloadService
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class UpscanConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit
+class UpscanConnector @Inject() (
+  http: HttpClient,
+  appConfig: AppConfig,
+  downloadService: MessageDownloadService
+)(implicit
   ec: ExecutionContext
 ) extends HttpFormats {
 
   private val initiateUrl: AbsoluteUrl =
     appConfig.upscanInitiateUrl.withPath(UrlPath(Seq("upscan", "v2", "initiate")))
+  private val upscanUrl: AbsoluteUrl = appConfig.upscanUrl
 
-  def initiate(messageId: MessageId)(implicit
+  def initiate(movementId: MovementId)(implicit
     hc: HeaderCarrier
   ): Future[Either[UpstreamErrorResponse, UpscanInitiateResponse]] = {
     val scanCompletePath =
-      UrlPath.parse(controllers.routes.MessageController.onScanComplete(messageId).path())
-    val uploadSuccessPath =
-      UrlPath.parse(controllers.routes.MessageController.onUploadSuccess(messageId).path())
-    val uploadFailurePath =
-      UrlPath.parse(controllers.routes.MessageController.onUploadFailure(messageId).path())
+      UrlPath.parse(controllers.routes.MessageController.create(movementId).path())
 
     val initiateRequest = UpscanInitiateRequest(
       callbackUrl = appConfig.selfUrl.withPath(scanCompletePath),
-      successRedirect = appConfig.selfUrl.withPath(uploadSuccessPath),
-      errorRedirect = appConfig.selfUrl.withPath(uploadFailurePath),
       minimumFileSize = appConfig.upscanMinimumFileSize,
       maximumFileSize = appConfig.upscanMaximumFileSize
     )
 
-    http.POST[UpscanInitiateRequest, Either[UpstreamErrorResponse, UpscanInitiateResponse]](
-      initiateUrl.toString,
-      initiateRequest
-    )
+    println("initiate begin")
+
+    val res =
+      http.POST[UpscanInitiateRequest, Either[UpstreamErrorResponse, UpscanInitiateResponse]](
+        initiateUrl.toString,
+        initiateRequest
+      )
+
+    println("initiate complete")
+
+    res
+  }
+
+  def downloadToFile(
+    reference: UpscanReference
+  ) = {
+    val url = upscanUrl.withPath(UrlPath(Seq("upscan", "download", reference.value)))
+    downloadService.downloadToTemporaryFile(url)
   }
 
 }

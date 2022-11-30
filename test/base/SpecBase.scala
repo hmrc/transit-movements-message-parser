@@ -40,7 +40,7 @@ trait SpecBase
 
   def fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("", "")
 
-  val baseUrl = "http://localhost:10210/transit-movements-message-parser"
+  val baseUrl = "http://localhost:10210"
 
   protected def baseApplicationBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

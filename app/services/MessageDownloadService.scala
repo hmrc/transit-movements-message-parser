@@ -16,19 +16,22 @@
 
 package services
 
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import io.lemonlabs.uri.AbsoluteUrl
-import play.api.libs.ws.WSClient
+import play.api.http.Status.INTERNAL_SERVER_ERROR
+import play.api.libs.ws.{WSClient, WSResponse}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
+import java.nio.file.{Files, Path}
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class MessageDownloadService @Inject() (
   wsClient: WSClient
-)(implicit ec: ExecutionContext) {
+)(implicit mat: Materializer, ec: ExecutionContext) {
 
   private def isFailureStatus(status: Int) =
     status / 100 >= 4
@@ -43,4 +46,20 @@ class MessageDownloadService @Inject() (
         Right(res.bodyAsSource)
     }
   }
+
+  def downloadToTemporaryFile(fileUrl: AbsoluteUrl): Future[Either[UpstreamErrorResponse, Path]] = {
+    val futureResponse: Future[WSResponse] =
+      wsClient.url(fileUrl.toString()).withMethod("GET").stream()
+
+    val file = Files.createTempFile("message-", "xml")
+    futureResponse.flatMap { res =>
+      res.bodyAsSource
+        .runWith(FileIO.toPath(file))
+        .map(_ => Right(file))
+        .recover { case NonFatal(ex) =>
+          Left(UpstreamErrorResponse(ex.getMessage, INTERNAL_SERVER_ERROR))
+        }
+    }
+  }
+
 }

@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.lemonlabs.uri.AbsoluteUrl
 import models.upscan._
-import models.values.{MessageId, UpscanReference}
+import models.values.{MovementId, UpscanReference}
 import models.{MessageType, RequestMessageType}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Arbitrary, Gen}
@@ -84,11 +84,11 @@ trait ModelGenerators {
       Gen.oneOf(MessageType.requestValues)
     }
 
-  implicit lazy val arbitraryMessageId: Arbitrary[MessageId] =
+  implicit lazy val arbitraryMessageId: Arbitrary[MovementId] =
     Arbitrary {
       for {
         value <- arbitrary[UUID]
-      } yield MessageId(value)
+      } yield MovementId(value)
     }
 
   implicit lazy val arbitraryUpstreamErrorResponse: Arbitrary[UpstreamErrorResponse] =
@@ -198,14 +198,10 @@ trait ModelGenerators {
     Arbitrary {
       for {
         callbackUrl     <- arbitrary[AbsoluteUrl]
-        successRedirect <- arbitrary[AbsoluteUrl]
-        errorRedirect   <- arbitrary[AbsoluteUrl]
         minimumFileSize <- arbitrary[Long]
         maximumFileSize <- arbitrary[Long]
       } yield UpscanInitiateRequest(
         callbackUrl,
-        successRedirect,
-        errorRedirect,
         minimumFileSize,
         maximumFileSize
       )

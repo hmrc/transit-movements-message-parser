@@ -18,8 +18,7 @@ package controllers
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
-import play.api.mvc.BodyParserUtils
-import play.api.mvc.PlayBodyParsers
+import play.api.mvc.{BodyParserUtils, PlayBodyParsers}
 
 trait StreamingBodyParser extends BodyParserUtils {
   implicit class StreamingBodyParserOps(parsers: PlayBodyParsers)(implicit mat: Materializer) {

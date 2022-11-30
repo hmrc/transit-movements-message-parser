@@ -1,5 +1,8 @@
 # microservice specific routes
-GET    /initiate-upload/:messageType    controllers.MessageController.initiateUpload(messageType: RequestMessageType)
-GET    /upload-success/:messageId       controllers.MessageController.onUploadSuccess(messageId: MessageId)
-GET    /upload-failure/:messageId       controllers.MessageController.onUploadFailure(messageId: MessageId)
-POST   /scan-complete/:messageId        controllers.MessageController.onScanComplete(messageId: MessageId)
+# missed out the arrivals|departures path element for brevity
+POST    /movements                                  controllers.MessageController.createMovement()
+POST    /movements/:movementId/messages             controllers.MessageController.create(movementId: MovementId)
+GET     /movements/:movementId/messages/:messageId  controllers.MessageController.get(movementId: MovementId, messageId: MessageId)
+POST    /rpc/sdes/callback                          controllers.MessageController.sdessuccess()
+
+
