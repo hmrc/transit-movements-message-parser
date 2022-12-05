@@ -1,0 +1,10 @@
+Cannot run scripts on the environments, must run the following steps
+
+1 - Request urls via curl-microservice job
+ Parameters:
+-X POST https://transit-movements-message-parser.protected.mdtp/movements
+
+2 - Postman request to public url given
+
+Add values in the "fields" field returned by 1, and then add a file field with the file to upload
+

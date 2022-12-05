@@ -79,6 +79,7 @@ class MessageController @Inject() (
     implicit val hc = HeaderCarrierConverter.fromRequest(request)
     val reference   = request.body \ "reference"
 
+    logger.info(s"upscan callback $reference")
     print(s"reference $reference")
 
     // 1. Download the file to a local temporary file
@@ -93,6 +94,7 @@ class MessageController @Inject() (
           // TODO set message sender
           // TODO set message record as Pending
           // 2. store the file in object-store
+          logger.info("uploading to object store")
           println("uploading to object store")
           objectStoreConnector
             .upload(movementId, messageId, path)
@@ -100,12 +102,15 @@ class MessageController @Inject() (
               case Right(_) => {
                 // 3. forward on the file to SDES
                 // TODO forward on the file to SDES
+                logger.info("forwarding to SDES")
                 println("forwarding to SDES")
                 sdesConnector.send(movementId, messageId)
+                logger.info("sdes request sent")
                 println("sdes request sent")
                 Future.successful(Created)
               }
               case Left(_) => {
+                logger.info("forwarding to object store failed")
                 println("forwarding to object store failed")
                 Future.successful(InternalServerError)
                 // TODO store the error in the message record and status = Failed?
@@ -151,6 +156,7 @@ class MessageController @Inject() (
       val item       = request.body.validate[SdesNotificationItem].get
       val movementId = item.properties.find(p => p.name == "movementId").get.value
       val messageId  = item.properties.find(p => p.name == "messageId").get.value
+      logger.info(s"callback for: $movementId $messageId")
       println(s"callback for: $movementId $messageId")
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
