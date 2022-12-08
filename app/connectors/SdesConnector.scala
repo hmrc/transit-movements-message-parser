@@ -21,6 +21,7 @@ import io.lemonlabs.uri.AbsoluteUrl
 import models.formats.HttpFormats
 import models.sdes._
 import models.values.{MessageId, MovementId}
+import play.api.Logging
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
@@ -33,7 +34,8 @@ class SdesConnector @Inject() (
   appConfig: AppConfig
 )(implicit
   ec: ExecutionContext
-) extends HttpFormats {
+) extends HttpFormats
+  with Logging {
 
   private val sdesUrl = AbsoluteUrl.parse(appConfig.sdesUrl + appConfig.sdesFilereadyUri)
 
@@ -53,12 +55,25 @@ class SdesConnector @Inject() (
       SdesAudit(UUID.randomUUID.toString)
     )
 
+    logger.info("sdes")
     println("sdes")
 
-    http.POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, Unit]](
-      sdesUrl.toString(),
-      request
-    )
+    val result = http
+      .POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, Unit]](
+        sdesUrl.toString(),
+        request
+      )
+
+    result.map { r =>
+      r match {
+        case Left(error) => {
+          logger.info(s"CTC to SDES error message: ${error.message} - ${error.statusCode}");
+          Left(error)
+        }
+        case Right(()) => logger.info(s"CTC to SDES successful"); Right(())
+      }
+    }
+
   }
 
   // probably should be in an object-store specific class
