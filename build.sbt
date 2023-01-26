@@ -18,10 +18,10 @@ lazy val microservice = Project(appName, file("."))
   .settings(inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)))
   .settings(scalacSettings)
   .settings(scoverageSettings)
-  .settings(addCompilerPlugin("io.tryp" % "splain" % "0.5.8" cross CrossVersion.patch))
+  .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
   .settings(
     majorVersion := 0,
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.10",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
@@ -39,7 +39,7 @@ lazy val microservice = Project(appName, file("."))
 lazy val buildSettings = Def.settings(
   scalafmtOnCompile := true,
   scalafixDependencies ++= Seq(
-    "com.github.liancheng" %% "organize-imports" % "0.5.0"
+    "com.github.liancheng" %% "organize-imports" % "0.6.0"
   )
 )
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package controllers
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import connectors.{ObjectStoreConnector, SdesConnector, UpscanConnector}
+import connectors.{ObjectStoreConnector, SDESProxyConnector, UpscanConnector}
 import models.formats.HttpFormats
 import models.sdes.SdesNotificationItem
 import models.upscan.CreateMovementResponse
@@ -40,7 +40,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class MessageController @Inject() (
   upscanConnector: UpscanConnector,
   objectStoreConnector: ObjectStoreConnector,
-  sdesConnector: SdesConnector,
+  sdesConnector: SDESProxyConnector,
   cc: ControllerComponents
 )(implicit mat: Materializer, ec: ExecutionContext)
   extends BackendController(cc)

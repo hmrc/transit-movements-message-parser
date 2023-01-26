@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class SdesConnector @Inject() (
+class SDESProxyConnector @Inject() (
   http: HttpClient,
   appConfig: AppConfig
 )(implicit
@@ -64,14 +64,11 @@ class SdesConnector @Inject() (
         request
       )
 
-    result.map { r =>
-      r match {
-        case Left(error) => {
-          logger.info(s"CTC to SDES error message: ${error.message} - ${error.statusCode}");
-          Left(error)
-        }
-        case Right(()) => logger.info(s"CTC to SDES successful"); Right(())
-      }
+    result.map {
+      case Left(error) =>
+        logger.info(s"CTC to SDES error message: ${error.message} - ${error.statusCode}");
+        Left(error)
+      case Right(()) => logger.info(s"CTC to SDES successful"); Right(())
     }
 
   }
