@@ -69,8 +69,8 @@ class SDESProxyConnector @Inject() (
       SdesAudit(UUID.randomUUID.toString)
     )
 
-    logger.info(s"sdes - $srn")
-    println(s"sdes - $srn")
+    logger.info(s"sdes")
+    println(s"sdes")
 
     httpClientV2
       .post(url"$sdesFileReadyUrl")
