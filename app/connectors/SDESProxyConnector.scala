@@ -47,15 +47,16 @@ class SDESProxyConnector @Inject() (
   with Logging {
 
   private lazy val sdesFileReadyUrl =
-    appConfig.sdesProxyUrl.withPath(appConfig.sdesProxyFileReadyUri)
-  private lazy val clientId = appConfig.sdesProxyClientId
-  private lazy val srn      = appConfig.sdesProxySrn
+    appConfig.sdesUrl.withPath(appConfig.sdesFileReadyUri)
+  private lazy val clientId        = appConfig.sdesClientId
+  private lazy val srn             = appConfig.sdesSrn
+  private lazy val informationType = appConfig.sdesInformationType
 
   def send(movementId: MovementId, messageId: MessageId, objectStoreSummary: ObjectSummaryWithMd5)(
     implicit hc: HeaderCarrier
   ): Future[Either[UpstreamErrorResponse, Unit]] = {
     val request = SdesFilereadyRequest(
-      appConfig.sdesProxyInformationType,
+      informationType,
       file = SdesFile(
         srn,
         objectStoreSummary.location.fileName,

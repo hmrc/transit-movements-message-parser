@@ -49,26 +49,24 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val upscanMaximumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.maximum-file-size").toBytes
 
-//  // SDES Stub Direct
-//
-//  val sdesUrl: String          = servicesConfig.baseUrl("sdes")
-//  val sdesFilereadyUri: String = config.get[String]("microservice.services.sdes.uri")
+  // SDES
+  lazy val useProxy: Boolean = config.get[Boolean]("sdes.use-proxy")
+  lazy val service: String   = if (useProxy) "secure-data-exchange-proxy" else "sdes-stub"
+
+  lazy val sdesInformationType: String = config.get[String]("sdes.information-type")
+  lazy val sdesSrn: String             = config.get[String]("sdes.srn")
+  lazy val sdesClientId: String        = config.get[String]("sdes.client-id")
 
   // SDES Proxy
 
-  lazy val sdesProxyUrl: AbsoluteUrl =
-    AbsoluteUrl.parse(servicesConfig.baseUrl("secure-data-exchange-proxy"))
-  lazy val sdesProxyFileReadyUri: UrlPath =
+  lazy val sdesUrl: AbsoluteUrl =
+    AbsoluteUrl.parse(servicesConfig.baseUrl(service))
+  lazy val sdesFileReadyUri: UrlPath =
     UrlPath(
       config
-        .get[String]("microservice.services.secure-data-exchange-proxy.file-ready-uri")
+        .get[String](s"microservice.services.$service.file-ready-uri")
         .split("/")
         .filter(_.nonEmpty)
     )
-  lazy val sdesProxyInformationType: String =
-    config.get[String]("microservice.services.secure-data-exchange-proxy.information-type")
-  lazy val sdesProxySrn: String =
-    config.get[String]("microservice.services.secure-data-exchange-proxy.srn")
-  lazy val sdesProxyClientId: String =
-    config.get[String]("microservice.services.secure-data-exchange-proxy.client-id")
+
 }
