@@ -19,11 +19,13 @@ If using Service Manager, you can run the following (which will redirect the pro
 sm2 --start UPSCAN_STUB OBJECT_STORE_STUB SDES_PROXY SDES_STUBS INTERNAL_AUTH --appendArgs '{"SDES_PROXY": ["-Dauditing.enabled=false", "-Dmicroservice.services.acl.unrestricted-file-types.0=S18", "-Dmicroservice.services.event.port=9191", "-Dmicroservice.services.event.path=/sdes-stub"]}'
 ```
 
-You need to download `sdes-stub` separately from https://github.com/hmrc/sdes-stub. Run it with the following command:
+You need to download `sdes-stub` separately from https://github.com/hmrc/sdes-stub (this is not SDES_STUBS, which is actually https://github.com/hmrc/secure-data-exchange-list-files-stubs and does not contain the callback functions). Run it with the following command:
 
 ```bash
 sbt -Dcallback.recipientOrSender.ctc-forward=http://localhost:10210/rpc/sdes/callback run
 ```
+
+This will ensure that the callback functionality can be seen.
 
 ### Running Object Store locally
 
