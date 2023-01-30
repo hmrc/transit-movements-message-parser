@@ -17,10 +17,10 @@
 package models.sdes
 
 case class SdesFile(
-  recipientOrSender: String,
+  recipientOrSender: String, // SRN
   name: String,
   location: String,
   checksum: SdesChecksum,
-  size: Int,
-  properties: Seq[SdesProperties] // ?? message sender ??
+  size: Long,
+  properties: Seq[SdesProperties] // x-conversation-id
 )

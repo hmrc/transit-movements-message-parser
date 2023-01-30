@@ -16,17 +16,22 @@
 
 package models.values
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.Format
+import play.api.libs.json.Json
 
 import java.util.UUID
 
-case class MovementId(value: String) extends AnyVal
+object ConversationId {
+  implicit val conversationIdFormat: Format[ConversationId] = Json.valueFormat[ConversationId]
 
-object MovementId {
-  def next(): MovementId = MovementId(
-    UUID.randomUUID().getMostSignificantBits.toHexString.toLowerCase
-  )
-
-  implicit val messageIdFormat: Format[MovementId] =
-    Json.valueFormat[MovementId]
+  // 123e4567-e89b-12d3-a456-426614174000
+  def apply(movementId: MovementId, messageId: MessageId): ConversationId =
+    ConversationId(
+      UUID.fromString(
+        s"${movementId.value.substring(0, 8)}-${movementId.value.substring(8, 12)}-${movementId.value
+          .substring(12)}-${messageId.value.substring(0, 4)}-${messageId.value.substring(4)}"
+      )
+    )
 }
+
+case class ConversationId(value: UUID)

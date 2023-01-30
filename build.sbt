@@ -12,7 +12,6 @@ lazy val microservice = Project(appName, file("."))
     JUnitXmlReportPlugin
   ) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(inThisBuild(buildSettings))
-  .settings(SbtDistributablesPlugin.publishingSettings)
   .settings(DefaultBuildSettings.integrationTestSettings())
   .settings(inConfig(IntegrationTest)(ScalafmtPlugin.scalafmtConfigSettings))
   .settings(inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)))
@@ -21,7 +20,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
   .settings(
     majorVersion := 0,
-    scalaVersion := "2.13.10",
+    scalaVersion := "2.13.8",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,

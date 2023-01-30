@@ -18,6 +18,7 @@ package config
 
 import com.typesafe.config.ConfigMemorySize
 import io.lemonlabs.uri.AbsoluteUrl
+import io.lemonlabs.uri.UrlPath
 import play.api.Configuration
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -48,20 +49,26 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val upscanMaximumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.maximum-file-size").toBytes
 
-  // SDES Stub Direct
-
-  val sdesUrl: String          = servicesConfig.baseUrl("sdes")
-  val sdesFilereadyUri: String = config.get[String]("microservice.services.sdes.uri")
+//  // SDES Stub Direct
+//
+//  val sdesUrl: String          = servicesConfig.baseUrl("sdes")
+//  val sdesFilereadyUri: String = config.get[String]("microservice.services.sdes.uri")
 
   // SDES Proxy
 
-  lazy val sdesProxyUrl: String = servicesConfig.baseUrl("secure-data-exchange-proxy")
-  lazy val sdesProxyFileReadyUri: String =
-    config.get[String]("microservice.services.secure-data-exchange-proxy.uri")
+  lazy val sdesProxyUrl: AbsoluteUrl =
+    AbsoluteUrl.parse(servicesConfig.baseUrl("secure-data-exchange-proxy"))
+  lazy val sdesProxyFileReadyUri: UrlPath =
+    UrlPath(
+      config
+        .get[String]("microservice.services.secure-data-exchange-proxy.file-ready-uri")
+        .split("/")
+        .filter(_.nonEmpty)
+    )
   lazy val sdesProxyInformationType: String =
     config.get[String]("microservice.services.secure-data-exchange-proxy.information-type")
   lazy val sdesProxySrn: String =
     config.get[String]("microservice.services.secure-data-exchange-proxy.srn")
   lazy val sdesProxyClientId: String =
-    config.get[String]("microservice.services.secure-data-exchange-proxy.s")
+    config.get[String]("microservice.services.secure-data-exchange-proxy.client-id")
 }

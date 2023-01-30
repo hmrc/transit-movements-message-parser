@@ -17,71 +17,73 @@
 package connectors
 
 import config.AppConfig
-import io.lemonlabs.uri.AbsoluteUrl
 import models.formats.HttpFormats
 import models.sdes._
-import models.values.{MessageId, MovementId}
+import models.values.ConversationId
+import models.values.MessageId
+import models.values.MovementId
 import play.api.Logging
+import play.api.http.HeaderNames
+import play.api.http.MimeTypes
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
+import uk.gov.hmrc.http.StringContextOps
+import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 class SDESProxyConnector @Inject() (
-  http: HttpClient,
+  httpClientV2: HttpClientV2,
   appConfig: AppConfig
 )(implicit
   ec: ExecutionContext
 ) extends HttpFormats
   with Logging {
 
-  private val sdesUrl = AbsoluteUrl.parse(appConfig.sdesUrl + appConfig.sdesFilereadyUri)
+  private lazy val sdesFileReadyUrl =
+    appConfig.sdesProxyUrl.withPath(appConfig.sdesProxyFileReadyUri)
+  private lazy val clientId = appConfig.sdesProxyClientId
+  private lazy val srn      = appConfig.sdesProxySrn
 
-  def send(movementId: MovementId, messageId: MessageId)(implicit
-    hc: HeaderCarrier
+  def send(movementId: MovementId, messageId: MessageId, objectStoreSummary: ObjectSummaryWithMd5)(
+    implicit hc: HeaderCarrier
   ): Future[Either[UpstreamErrorResponse, Unit]] = {
     val request = SdesFilereadyRequest(
-      "S18",
+      appConfig.sdesProxyInformationType,
       file = SdesFile(
-        "ctc_forward",
-        "ie015.xml",
-        pathFrom(movementId, messageId).toString(),
-        SdesChecksum("hhh"),
-        200,
-        Seq(SdesProperties("movementId", "test"), SdesProperties("messageId", "test2"))
+        srn,
+        objectStoreSummary.location.fileName,
+        objectStoreSummary.location.directory.asUri,
+        SdesChecksum(objectStoreSummary.contentMd5.value),
+        objectStoreSummary.contentLength,
+        Seq(
+          SdesProperties("x-conversation-id", ConversationId(movementId, messageId).value.toString)
+        )
       ),
       SdesAudit(UUID.randomUUID.toString)
     )
 
-    logger.info("sdes")
-    println("sdes")
+    logger.info(s"sdes - $srn")
+    println(s"sdes - $srn")
 
-    val result = http
-      .POST[SdesFilereadyRequest, Either[UpstreamErrorResponse, Unit]](
-        sdesUrl.toString(),
-        request
-      )
-
-    result.map {
-      case Left(error) =>
-        logger.info(s"CTC to SDES error message: ${error.message} - ${error.statusCode}");
-        Left(error)
-      case Right(()) => logger.info(s"CTC to SDES successful"); Right(())
-    }
-
-  }
-
-  // probably should be in an object-store specific class
-  def pathFrom(movementId: MovementId, messageId: MessageId): AbsoluteUrl = {
-    val res = AbsoluteUrl.parse(
-      s"${appConfig.objectStoreRoot}/movements/${movementId.value}/messages/${messageId.value}"
-    )
-
-    println(s"path: $res")
-
-    res
+    httpClientV2
+      .post(url"$sdesFileReadyUrl")
+      .setHeader("X-Client-Id" -> clientId)
+      .setHeader(HeaderNames.CONTENT_TYPE -> MimeTypes.JSON)
+      .withBody(Json.toJson(request))
+      .execute[Either[UpstreamErrorResponse, Unit]]
+      .map {
+        case Left(error) =>
+          logger.info(s"CTC to SDES error message: ${error.message} - ${error.statusCode}");
+          Left(error)
+        case Right(()) => logger.info(s"CTC to SDES successful"); Right(())
+      }
   }
 
 }

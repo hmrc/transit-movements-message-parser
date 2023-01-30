@@ -20,10 +20,10 @@ import play.api.libs.json.{Format, Json}
 
 import java.util.UUID
 
-case class MessageId(value: UUID) extends AnyVal
+case class MessageId(value: String) extends AnyVal
 
 object MessageId {
-  def next(): MessageId = MessageId(UUID.randomUUID())
+  def next(): MessageId = MessageId(UUID.randomUUID().getLeastSignificantBits.toHexString)
 
   implicit val messageIdFormat: Format[MessageId] =
     Json.valueFormat[MessageId]

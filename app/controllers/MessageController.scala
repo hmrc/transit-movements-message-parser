@@ -62,11 +62,10 @@ class MessageController @Inject() (
       case Left(error: UpstreamErrorResponse) =>
         BadRequest(error.message)
 
-      case Right(result) => {
+      case Right(result) =>
         // TODO Save metadata to database
         println("Created")
         Created(toJson(CreateMovementResponse(movementId, result.uploadRequest)))
-      }
 
     }
   }
@@ -85,8 +84,8 @@ class MessageController @Inject() (
     // 1. Download the file to a local temporary file
     upscanConnector
       .downloadToFile(UpscanReference(reference.as[String]))
-      .flatMap(_ match {
-        case Right(path: Path) => {
+      .flatMap {
+        case Right(path: Path) =>
           // TODO Create new message record
           val messageId = MessageId.next()
           // TODO extract meta data, inc file type
@@ -98,32 +97,31 @@ class MessageController @Inject() (
           println("uploading to object store")
           objectStoreConnector
             .upload(movementId, messageId, path)
-            .flatMap(_ match {
-              case Right(_) => {
+            .flatMap {
+              case Right(result) =>
                 // 3. forward on the file to SDES
                 // TODO forward on the file to SDES
                 logger.info("forwarding to SDES")
                 println("forwarding to SDES")
-                sdesConnector.send(movementId, messageId)
-                logger.info("sdes request sent")
-                println("sdes request sent")
-                Future.successful(Created)
-              }
-              case Left(_) => {
+                sdesConnector
+                  .send(movementId, messageId, result)
+                  .flatMap { _ =>
+                    logger.info("sdes request sent")
+                    println("sdes request sent")
+                    Future.successful(Created)
+                  }
+              case Left(_) =>
                 logger.info("forwarding to object store failed")
                 println("forwarding to object store failed")
                 Future.successful(InternalServerError)
-                // TODO store the error in the message record and status = Failed?
-                // TODO push a failure message out to PPNS?
-              }
-            })
-        }
-        case Left(_) => {
+              // TODO store the error in the message record and status = Failed?
+              // TODO push a failure message out to PPNS?
+            }
+        case Left(_) =>
           // TODO store the error in the message record and status = Failed?
           // TODO push a failure message out to PPNS?
           Future.successful(InternalServerError)
-        }
-      })
+      }
   }
 
   // .../movements/[arrivals|departures]/messages/{messageId}

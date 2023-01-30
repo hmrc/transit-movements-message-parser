@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,13 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import org.mockito.ArgumentMatchers.{eq => eqTo}
+import uk.gov.hmrc.objectstore.client.Md5Hash
+import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
+import uk.gov.hmrc.objectstore.client.Path
+import uk.gov.hmrc.objectstore.client.Path.Directory
 
 import java.nio.file.Files
+import java.time.Instant
 import scala.concurrent.Future
 
 class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
@@ -138,7 +143,18 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
                 eqTo(path)
               )(any[HeaderCarrier])
             )
-              .thenReturn(Future.successful(Right(None)))
+              .thenReturn(
+                Future.successful(
+                  Right(
+                    ObjectSummaryWithMd5(
+                      Path.File(Directory("/"), "test.xml"),
+                      200,
+                      Md5Hash(""),
+                      Instant.now()
+                    )
+                  )
+                )
+              )
 
             val request =
               FakeRequest(POST, routes.MessageController.create(movementId).url)
