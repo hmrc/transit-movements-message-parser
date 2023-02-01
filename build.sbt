@@ -17,7 +17,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)))
   .settings(scalacSettings)
   .settings(scoverageSettings)
-  .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
+  // .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
   .settings(
     majorVersion := 0,
     scalaVersion := "2.13.8",
@@ -46,7 +46,6 @@ lazy val scalacSettings = Def.settings(
   // Disable warnings arising from generated routing code
   scalacOptions += "-Wconf:src=routes/.*:silent",
   // Disable fatal warnings and warnings from discarding values
-  scalacOptions += "-P:splain:all:true",
   scalacOptions ~= { opts =>
     opts.filterNot(Set("-Xfatal-warnings", "-Ywarn-value-discard"))
   }
