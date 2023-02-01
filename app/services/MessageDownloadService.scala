@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,16 @@ class MessageDownloadService @Inject() (
     fileUrl: AbsoluteUrl
   ): Future[Either[UpstreamErrorResponse, Source[ByteString, _]]] = {
     wsClient.url(fileUrl.toString).get().map { res =>
-      if (isFailureStatus(res.status))
-        Left(UpstreamErrorResponse(res.body, res.status, res.status, res.headers))
-      else
+      if (isFailureStatus(res.status)) {
+        Left(
+          UpstreamErrorResponse(
+            res.body,
+            res.status,
+            res.status,
+            res.headers.map(k => k._1 -> k._2.toSeq)
+          )
+        )
+      } else
         Right(res.bodyAsSource)
     }
   }

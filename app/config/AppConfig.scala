@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package config
 
 import com.typesafe.config.ConfigMemorySize
 import io.lemonlabs.uri.AbsoluteUrl
+import io.lemonlabs.uri.UrlPath
 import play.api.Configuration
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -37,6 +38,8 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val selfUrl: AbsoluteUrl =
     AbsoluteUrl.parse(servicesConfig.baseUrl(appName))
 
+  // Upscan
+
   val upscanInitiateUrl: AbsoluteUrl =
     AbsoluteUrl.parse(servicesConfig.baseUrl("upscan-initiate"))
   val upscanUrl: AbsoluteUrl =
@@ -46,6 +49,24 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   val upscanMaximumFileSize: Long =
     config.get[ConfigMemorySize]("microservice.services.upscan-initiate.maximum-file-size").toBytes
 
-  val sdesUrl: String          = servicesConfig.baseUrl("sdes")
-  val sdesFilereadyUri: String = config.get[String]("microservice.services.sdes.uri")
+  // SDES
+  lazy val useProxy: Boolean = config.get[Boolean]("sdes.use-proxy")
+  lazy val service: String   = if (useProxy) "secure-data-exchange-proxy" else "sdes-stub"
+
+  lazy val sdesInformationType: String = config.get[String]("sdes.information-type")
+  lazy val sdesSrn: String             = config.get[String]("sdes.srn")
+  lazy val sdesClientId: String        = config.get[String]("sdes.client-id")
+
+  // SDES Proxy
+
+  lazy val sdesUrl: AbsoluteUrl =
+    AbsoluteUrl.parse(servicesConfig.baseUrl(service))
+  lazy val sdesFileReadyUri: UrlPath =
+    UrlPath(
+      config
+        .get[String](s"microservice.services.$service.file-ready-uri")
+        .split("/")
+        .filter(_.nonEmpty)
+    )
+
 }

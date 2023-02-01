@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package controllers
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import connectors.{ObjectStoreConnector, SdesConnector, UpscanConnector}
+import connectors.{ObjectStoreConnector, SDESProxyConnector, UpscanConnector}
 import models.formats.HttpFormats
 import models.sdes.SdesNotificationItem
 import models.upscan.CreateMovementResponse
@@ -40,7 +40,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class MessageController @Inject() (
   upscanConnector: UpscanConnector,
   objectStoreConnector: ObjectStoreConnector,
-  sdesConnector: SdesConnector,
+  sdesConnector: SDESProxyConnector,
   cc: ControllerComponents
 )(implicit mat: Materializer, ec: ExecutionContext)
   extends BackendController(cc)
@@ -62,11 +62,10 @@ class MessageController @Inject() (
       case Left(error: UpstreamErrorResponse) =>
         BadRequest(error.message)
 
-      case Right(result) => {
+      case Right(result) =>
         // TODO Save metadata to database
         println("Created")
         Created(toJson(CreateMovementResponse(movementId, result.uploadRequest)))
-      }
 
     }
   }
@@ -85,8 +84,8 @@ class MessageController @Inject() (
     // 1. Download the file to a local temporary file
     upscanConnector
       .downloadToFile(UpscanReference(reference.as[String]))
-      .flatMap(_ match {
-        case Right(path: Path) => {
+      .flatMap {
+        case Right(path: Path) =>
           // TODO Create new message record
           val messageId = MessageId.next()
           // TODO extract meta data, inc file type
@@ -98,32 +97,31 @@ class MessageController @Inject() (
           println("uploading to object store")
           objectStoreConnector
             .upload(movementId, messageId, path)
-            .flatMap(_ match {
-              case Right(_) => {
+            .flatMap {
+              case Right(result) =>
                 // 3. forward on the file to SDES
                 // TODO forward on the file to SDES
                 logger.info("forwarding to SDES")
                 println("forwarding to SDES")
-                sdesConnector.send(movementId, messageId)
-                logger.info("sdes request sent")
-                println("sdes request sent")
-                Future.successful(Created)
-              }
-              case Left(_) => {
+                sdesConnector
+                  .send(movementId, messageId, result)
+                  .flatMap { _ =>
+                    logger.info("sdes request sent")
+                    println("sdes request sent")
+                    Future.successful(Created)
+                  }
+              case Left(_) =>
                 logger.info("forwarding to object store failed")
                 println("forwarding to object store failed")
                 Future.successful(InternalServerError)
-                // TODO store the error in the message record and status = Failed?
-                // TODO push a failure message out to PPNS?
-              }
-            })
-        }
-        case Left(_) => {
+              // TODO store the error in the message record and status = Failed?
+              // TODO push a failure message out to PPNS?
+            }
+        case Left(_) =>
           // TODO store the error in the message record and status = Failed?
           // TODO push a failure message out to PPNS?
           Future.successful(InternalServerError)
-        }
-      })
+      }
   }
 
   // .../movements/[arrivals|departures]/messages/{messageId}
@@ -153,11 +151,10 @@ class MessageController @Inject() (
   def sdessuccess =
     Action.async(parse.json) { request =>
       println(request.body)
-      val item       = request.body.validate[SdesNotificationItem].get
-      val movementId = item.properties.find(p => p.name == "movementId").get.value
-      val messageId  = item.properties.find(p => p.name == "messageId").get.value
-      logger.info(s"callback for: $movementId $messageId")
-      println(s"callback for: $movementId $messageId")
+      val item           = request.body.validate[SdesNotificationItem].get
+      val conversationId = item.properties.find(p => p.name == "x-conversation-id").get.value
+      logger.info(s"callback for: $conversationId")
+      println(s"callback for: $conversationId")
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
     }

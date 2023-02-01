@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import play.api.mvc.Result
 import play.api.mvc.Results.{InternalServerError, NotFound}
 import play.api.{Logging, mvc}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
 import uk.gov.hmrc.objectstore.client.play.Implicits._
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient
 import uk.gov.hmrc.objectstore.client.{Path, Object => Thingy}
@@ -41,7 +42,7 @@ class ObjectStoreConnector @Inject() (
     movementId: MovementId,
     messageId: MessageId,
     path: java.nio.file.Path
-  )(implicit hc: HeaderCarrier): Future[Either[Result, _]] = {
+  )(implicit hc: HeaderCarrier): Future[Either[Result, ObjectSummaryWithMd5]] = {
     client
       .putObject(
         path =
@@ -49,7 +50,7 @@ class ObjectStoreConnector @Inject() (
         content = path.toFile,
         contentType = Some("application/xml")
       )
-      .map(_ => Right(None))
+      .map(Right(_))
       .recover { case e =>
         logger.error(e.getMessage)
         Left(InternalServerError("An error has occurred."))

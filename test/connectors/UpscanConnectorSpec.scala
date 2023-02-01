@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,9 @@ class UpscanConnectorSpec
 
       val url = "/upscan/v2/initiate"
 
-      def request(uuid: UUID)(implicit appConfig: AppConfig): UpscanInitiateRequest =
+      def request(movementId: MovementId)(implicit appConfig: AppConfig): UpscanInitiateRequest =
         UpscanInitiateRequest(
-          callbackUrl = AbsoluteUrl.parse(s"$baseUrl/movements/$uuid/messages"),
+          callbackUrl = AbsoluteUrl.parse(s"$baseUrl/movements/${movementId.value}/messages"),
           minimumFileSize = appConfig.upscanMinimumFileSize,
           maximumFileSize = appConfig.upscanMaximumFileSize
         )
@@ -70,10 +70,10 @@ class UpscanConnectorSpec
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
           forAll(arbitrary[MovementId], arbitrary[UpscanInitiateResponse]) {
-            (messageId, response) =>
+            (movementId, response) =>
               server.stubFor(
                 post(urlEqualTo(url))
-                  .withRequestBody(equalToJson(stringify(request(messageId.value))))
+                  .withRequestBody(equalToJson(stringify(request(movementId))))
                   .willReturn(
                     aResponse()
                       .withStatus(OK)
@@ -81,7 +81,7 @@ class UpscanConnectorSpec
                   )
               )
 
-              val result = Await.result(connector.initiate(messageId), Duration.Inf)
+              val result = Await.result(connector.initiate(movementId), Duration.Inf)
               result.right.get mustBe response
           }
         }
@@ -95,17 +95,17 @@ class UpscanConnectorSpec
           val connector                     = app.injector.instanceOf[UpscanConnector]
           implicit val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-          forAll(arbitrary[MovementId], Gen.chooseNum(400, 599)) { (messageId, statusCode) =>
+          forAll(arbitrary[MovementId], Gen.chooseNum(400, 599)) { (movementId, statusCode) =>
             server.stubFor(
               post(urlEqualTo(url))
-                .withRequestBody(equalToJson(stringify(request(messageId.value))))
+                .withRequestBody(equalToJson(stringify(request(movementId))))
                 .willReturn(
                   aResponse()
                     .withStatus(statusCode)
                 )
             )
 
-            val result = Await.result(connector.initiate(messageId), Duration.Inf)
+            val result = Await.result(connector.initiate(movementId), Duration.Inf)
             result.left.get.statusCode mustBe statusCode
           }
         }

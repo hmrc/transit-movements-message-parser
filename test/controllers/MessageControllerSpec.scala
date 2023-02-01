@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@
 package controllers
 
 import base.SpecBase
+import cats.data.EitherT
+import connectors.SDESProxyConnector
 import connectors.{ObjectStoreConnector, UpscanConnector}
 import generators.ModelGenerators
 import models.upscan.{UpscanInitiateResponse, UpscanSuccessNotification}
 import models.values.{MessageId, MovementId}
+import org.mockito.ArgumentMatchers.anyString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.inject.bind
@@ -29,9 +32,15 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import org.mockito.ArgumentMatchers.{eq => eqTo}
+import uk.gov.hmrc.objectstore.client.Md5Hash
+import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
+import uk.gov.hmrc.objectstore.client.Path
+import uk.gov.hmrc.objectstore.client.Path.Directory
 
 import java.nio.file.Files
+import java.time.Instant
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
 
@@ -110,11 +119,13 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
       "must return Created" in {
         val mockUpscanConnector: UpscanConnector           = mock[UpscanConnector]
         val mockObjectStoreConnector: ObjectStoreConnector = mock[ObjectStoreConnector]
+        val mockSDESProxyConnector: SDESProxyConnector     = mock[SDESProxyConnector]
 
         val application = baseApplicationBuilder
           .overrides(
             bind[UpscanConnector].toInstance(mockUpscanConnector),
-            bind[ObjectStoreConnector].toInstance(mockObjectStoreConnector)
+            bind[ObjectStoreConnector].toInstance(mockObjectStoreConnector),
+            bind[SDESProxyConnector].toInstance(mockSDESProxyConnector)
           )
           .build()
 
@@ -138,7 +149,28 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
                 eqTo(path)
               )(any[HeaderCarrier])
             )
-              .thenReturn(Future.successful(Right(None)))
+              .thenReturn(
+                Future.successful(
+                  Right(
+                    ObjectSummaryWithMd5(
+                      Path.File(Directory("/"), "test.xml"),
+                      200,
+                      Md5Hash(""),
+                      Instant.now()
+                    )
+                  )
+                )
+              )
+
+            reset(mockSDESProxyConnector)
+            when(
+              mockSDESProxyConnector.send(
+                MovementId(anyString()),
+                MessageId(anyString()),
+                any[ObjectSummaryWithMd5]
+              )(any[HeaderCarrier])
+            )
+              .thenReturn(Future.successful(Right(())))
 
             val request =
               FakeRequest(POST, routes.MessageController.create(movementId).url)
