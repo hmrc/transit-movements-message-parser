@@ -151,11 +151,10 @@ class MessageController @Inject() (
   def sdessuccess =
     Action.async(parse.json) { request =>
       println(request.body)
-      val item       = request.body.validate[SdesNotificationItem].get
-      val movementId = item.properties.find(p => p.name == "movementId").get.value
-      val messageId  = item.properties.find(p => p.name == "messageId").get.value
-      logger.info(s"callback for: $movementId $messageId")
-      println(s"callback for: $movementId $messageId")
+      val item           = request.body.validate[SdesNotificationItem].get
+      val conversationId = item.properties.find(p => p.name == "x-conversation-id").get.value
+      logger.info(s"callback for: $conversationId")
+      println(s"callback for: $conversationId")
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
     }
