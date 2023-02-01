@@ -17,7 +17,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)))
   .settings(scalacSettings)
   .settings(scoverageSettings)
-  .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
+  // .settings(addCompilerPlugin("io.tryp" % "splain" % "1.0.1" cross CrossVersion.patch))
   .settings(
     majorVersion := 0,
     scalaVersion := "2.13.8",
