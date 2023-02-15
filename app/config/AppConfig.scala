@@ -57,6 +57,9 @@ class AppConfig @Inject() (val config: Configuration, servicesConfig: ServicesCo
   lazy val sdesSrn: String             = config.get[String]("sdes.srn")
   lazy val sdesClientId: String        = config.get[String]("sdes.client-id")
 
+  lazy val objectStoreUrl: String =
+    config.get[String]("microservice.services.object-store.sdes-host")
+
   // SDES Proxy
 
   lazy val sdesUrl: AbsoluteUrl =

@@ -55,23 +55,29 @@ class SDESProxyConnector @Inject() (
   def send(movementId: MovementId, messageId: MessageId, objectStoreSummary: ObjectSummaryWithMd5)(
     implicit hc: HeaderCarrier
   ): Future[Either[UpstreamErrorResponse, Unit]] = {
+    val file = SdesFile(
+      srn,
+      objectStoreSummary.location.fileName,
+      s"${appConfig.objectStoreUrl}/${objectStoreSummary.location.directory.asUri}",
+      SdesChecksum(objectStoreSummary.contentMd5.value),
+      objectStoreSummary.contentLength,
+      Seq(
+        SdesProperties("x-conversation-id", ConversationId(movementId, messageId).value.toString)
+      )
+    )
     val request = SdesFilereadyRequest(
       informationType,
-      file = SdesFile(
-        srn,
-        objectStoreSummary.location.fileName,
-        objectStoreSummary.location.directory.asUri,
-        SdesChecksum(objectStoreSummary.contentMd5.value),
-        objectStoreSummary.contentLength,
-        Seq(
-          SdesProperties("x-conversation-id", ConversationId(movementId, messageId).value.toString)
-        )
-      ),
+      file,
       SdesAudit(UUID.randomUUID.toString)
     )
 
-    logger.info(s"sdes")
-    println(s"sdes")
+    val logEntry =
+      s"""Sending to SDES:
+         |
+         |$file
+         |""".stripMargin
+    logger.info(logEntry)
+    println(logEntry)
 
     httpClientV2
       .post(url"$sdesFileReadyUrl")
