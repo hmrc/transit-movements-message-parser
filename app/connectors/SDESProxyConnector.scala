@@ -60,7 +60,9 @@ class SDESProxyConnector @Inject() (
       srn,
       objectStoreSummary.location.fileName,
       s"${appConfig.objectStoreUrl}/${objectStoreSummary.location.asUri}",
-      SdesChecksum(value = Base64.getDecoder.decode(objectStoreSummary.contentMd5.value).map("%02x".format(_)).mkString),
+      SdesChecksum(value =
+        Base64.getDecoder.decode(objectStoreSummary.contentMd5.value).map("%02x".format(_)).mkString
+      ),
       objectStoreSummary.contentLength,
       Seq(
         SdesProperties("x-conversation-id", ConversationId(movementId, messageId).value.toString)
