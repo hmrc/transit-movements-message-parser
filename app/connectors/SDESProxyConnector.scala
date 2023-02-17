@@ -33,6 +33,7 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.objectstore.client.ObjectSummaryWithMd5
 
+import java.util.Base64
 import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
@@ -58,8 +59,8 @@ class SDESProxyConnector @Inject() (
     val file = SdesFile(
       srn,
       objectStoreSummary.location.fileName,
-      s"${appConfig.objectStoreUrl}/${objectStoreSummary.location.directory.asUri}",
-      SdesChecksum(objectStoreSummary.contentMd5.value),
+      s"${appConfig.objectStoreUrl}/${objectStoreSummary.location.asUri}",
+      SdesChecksum(value = Base64.getDecoder.decode(objectStoreSummary.contentMd5.value).map("%02x".format(_)).mkString),
       objectStoreSummary.contentLength,
       Seq(
         SdesProperties("x-conversation-id", ConversationId(movementId, messageId).value.toString)
@@ -74,7 +75,7 @@ class SDESProxyConnector @Inject() (
     val logEntry =
       s"""Sending to SDES:
          |
-         |$file
+         |${Json.stringify(Json.toJson(request))}
          |""".stripMargin
     logger.info(logEntry)
     println(logEntry)
