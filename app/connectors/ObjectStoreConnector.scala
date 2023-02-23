@@ -46,7 +46,7 @@ class ObjectStoreConnector @Inject() (
     client
       .putObject(
         path =
-          Path.Directory(s"movements/${movementId.value}/messages").file(s"${messageId.value}.xml"),
+          Path.Directory(s"sdes/movements/${movementId.value}/messages").file(s"${messageId.value}.xml"),
         content = path.toFile,
         contentType = Some("application/xml")
       )
@@ -63,7 +63,7 @@ class ObjectStoreConnector @Inject() (
   )(implicit hc: HeaderCarrier): Future[Either[mvc.Result, Thingy[Source[ByteString, NotUsed]]]] =
     client
       .getObject[Source[ByteString, NotUsed]](
-        Path.Directory(s"movements/$movementId/messages").file(s"$messageId.xml")
+        Path.Directory(s"sdes/movements/$movementId/messages").file(s"$messageId.xml")
       )
       .map {
         case Some(objectSource) =>
