@@ -150,11 +150,22 @@ class MessageController @Inject() (
   // /rpc/sdes/callback
   def sdessuccess =
     Action.async(parse.json) { request =>
-      println(request.body)
-      val item           = request.body.validate[SdesNotificationItem].get
-      val conversationId = item.properties.find(p => p.name == "x-conversation-id").get.value
-      logger.info(s"callback for: $conversationId")
-      println(s"callback for: $conversationId")
+      logger.info(s"Received SDES callback: body ${request.body}")
+      println(s"Received SDES callback: body ${request.body}")
+      request.body
+        .validate[SdesNotificationItem]
+        .fold(
+          { invalid =>
+            logger.info(s"SDES callback failed to parse as a notification")
+            println(s"SDES callback failed to parse as a notification")
+          },
+          { item =>
+            val conversationId = item.properties.find(p => p.name == "x-conversation-id").get.value
+            logger.info(s"callback for: $conversationId")
+            println(s"callback for: $conversationId")
+          }
+        )
+
       // TODO update movement-message record to set status = submitted
       Future.successful(Ok)
     }
