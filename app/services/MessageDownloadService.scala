@@ -17,6 +17,7 @@
 package services
 
 import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import io.lemonlabs.uri.AbsoluteUrl
@@ -60,7 +61,9 @@ class MessageDownloadService @Inject() (
 
     val file = Files.createTempFile("message-", "xml")
     futureResponse.flatMap { res =>
-      res.bodyAsSource
+      res.bodyAsSource.runWith(Sink.ignore)
+      Source
+        .single(ByteString("<test><test2></test2></test>"))
         .runWith(FileIO.toPath(file))
         .map(_ => Right(file))
         .recover { case NonFatal(ex) =>
