@@ -20,6 +20,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import connectors.{ObjectStoreConnector, SDESProxyConnector, UpscanConnector}
+import io.lemonlabs.uri.AbsoluteUrl
 import models.formats.HttpFormats
 import models.sdes.SdesNotificationItem
 import models.upscan.CreateMovementResponse
@@ -77,13 +78,16 @@ class MessageController @Inject() (
   def create(movementId: MovementId) = Action.async(parse.json) { implicit request =>
     implicit val hc = HeaderCarrierConverter.fromRequest(request)
     val reference   = request.body \ "reference"
+    val url         = request.body \ "downloadUrl"
 
     logger.info(s"upscan callback $reference")
-    print(s"reference $reference")
+    logger.info(s"upscan download URL $url")
+    println(s"reference $reference")
+    println(s"upscan download URL $url")
 
     // 1. Download the file to a local temporary file
     upscanConnector
-      .downloadToFile(UpscanReference(reference.as[String]))
+      .downloadToFile(url.as[AbsoluteUrl])
       .flatMap {
         case Right(path: Path) =>
           // TODO Create new message record
