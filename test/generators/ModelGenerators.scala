@@ -72,9 +72,9 @@ trait ModelGenerators {
     Arbitrary {
       for {
         protocol <- Gen.oneOf("http", "https")
-        domain   <- Gen.alphaNumStr
+        domain   <- Gen.stringOfN(5, Gen.alphaNumChar)
         tld      <- Gen.oneOf("com", "io", "net")
-        path     <- Gen.alphaNumStr
+        path     <- Gen.stringOfN(5, Gen.alphaNumChar)
       } yield AbsoluteUrl.parse(s"$protocol://$domain.$tld/$path")
     }
   }

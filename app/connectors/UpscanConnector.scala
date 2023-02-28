@@ -66,10 +66,9 @@ class UpscanConnector @Inject() (
   }
 
   def downloadToFile(
-    reference: UpscanReference
+    downloadUrl: AbsoluteUrl
   ) = {
-    val url = upscanUrl.withPath(UrlPath(Seq("upscan", "download", reference.value)))
-    downloadService.downloadToTemporaryFile(url)
+    downloadService.downloadToTemporaryFile(downloadUrl)
   }
 
 }

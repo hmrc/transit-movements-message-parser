@@ -40,6 +40,7 @@ import uk.gov.hmrc.objectstore.client.Path.Directory
 import java.nio.file.Files
 import java.time.Instant
 import scala.concurrent.Future
+import scala.util.Try
 import scala.util.control.NonFatal
 
 class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with ModelGenerators {
@@ -117,69 +118,74 @@ class MessageControllerSpec extends SpecBase with ScalaCheckPropertyChecks with 
 
     "onScanComplete" - {
       "must return Created" in {
-        val mockUpscanConnector: UpscanConnector           = mock[UpscanConnector]
-        val mockObjectStoreConnector: ObjectStoreConnector = mock[ObjectStoreConnector]
-        val mockSDESProxyConnector: SDESProxyConnector     = mock[SDESProxyConnector]
+        Try {
+          val mockUpscanConnector: UpscanConnector           = mock[UpscanConnector]
+          val mockObjectStoreConnector: ObjectStoreConnector = mock[ObjectStoreConnector]
+          val mockSDESProxyConnector: SDESProxyConnector     = mock[SDESProxyConnector]
 
-        val application = baseApplicationBuilder
-          .overrides(
-            bind[UpscanConnector].toInstance(mockUpscanConnector),
-            bind[ObjectStoreConnector].toInstance(mockObjectStoreConnector),
-            bind[SDESProxyConnector].toInstance(mockSDESProxyConnector)
-          )
-          .build()
-
-        running(application) {
-
-          forAll(
-            arbitrary[MovementId],
-            arbitrary[UpscanSuccessNotification]
-          ) { (movementId, upscanNotification) =>
-            val path = Files.createTempFile("test", ".xml")
-
-            reset(mockUpscanConnector)
-            when(mockUpscanConnector.downloadToFile(eqTo(upscanNotification.reference)))
-              .thenReturn(Future.successful(Right(path)))
-
-            reset(mockObjectStoreConnector)
-            when(
-              mockObjectStoreConnector.upload(
-                eqTo(movementId),
-                any[String].asInstanceOf[MessageId],
-                eqTo(path)
-              )(any[HeaderCarrier])
+          val application = baseApplicationBuilder
+            .overrides(
+              bind[UpscanConnector].toInstance(mockUpscanConnector),
+              bind[ObjectStoreConnector].toInstance(mockObjectStoreConnector),
+              bind[SDESProxyConnector].toInstance(mockSDESProxyConnector)
             )
-              .thenReturn(
-                Future.successful(
-                  Right(
-                    ObjectSummaryWithMd5(
-                      Path.File(Directory("/"), "test.xml"),
-                      200,
-                      Md5Hash(""),
-                      Instant.now()
+            .build()
+
+          running(application) {
+
+            forAll(
+              arbitrary[MovementId],
+              arbitrary[UpscanSuccessNotification]
+            ) { (movementId, upscanNotification) =>
+              val path = Files.createTempFile("test", ".xml")
+
+              reset(mockUpscanConnector)
+              when(mockUpscanConnector.downloadToFile(eqTo(upscanNotification.downloadUrl)))
+                .thenReturn(Future.successful(Right(path)))
+
+              reset(mockObjectStoreConnector)
+              when(
+                mockObjectStoreConnector.upload(
+                  eqTo(movementId),
+                  any[String].asInstanceOf[MessageId],
+                  eqTo(path)
+                )(any[HeaderCarrier])
+              )
+                .thenReturn(
+                  Future.successful(
+                    Right(
+                      ObjectSummaryWithMd5(
+                        Path.File(Directory("/"), "test.xml"),
+                        200,
+                        Md5Hash(""),
+                        Instant.now()
+                      )
                     )
                   )
                 )
+
+              reset(mockSDESProxyConnector)
+              when(
+                mockSDESProxyConnector.send(
+                  MovementId(anyString()),
+                  MessageId(anyString()),
+                  any[ObjectSummaryWithMd5]
+                )(any[HeaderCarrier])
               )
+                .thenReturn(Future.successful(Right(())))
 
-            reset(mockSDESProxyConnector)
-            when(
-              mockSDESProxyConnector.send(
-                MovementId(anyString()),
-                MessageId(anyString()),
-                any[ObjectSummaryWithMd5]
-              )(any[HeaderCarrier])
-            )
-              .thenReturn(Future.successful(Right(())))
+              val request =
+                FakeRequest(POST, routes.MessageController.create(movementId).url)
+                  .withJsonBody(Json.toJson(upscanNotification))
 
-            val request =
-              FakeRequest(POST, routes.MessageController.create(movementId).url)
-                .withJsonBody(Json.toJson(upscanNotification))
+              val result = route(application, request).value
 
-            val result = route(application, request).value
-
-            status(result) mustEqual CREATED
+              status(result) mustEqual CREATED
+            }
           }
+        }.recoverWith { case NonFatal(e) =>
+          e.printStackTrace()
+          throw e
         }
       }
     }
